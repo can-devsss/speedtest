@@ -1,223 +1,175 @@
 class SpeedVisuals {
-  constructor(gaugeCanvasId, waveCanvasId) {
-    this.gaugeCanvas = document.getElementById(gaugeCanvasId);
-    this.gaugeCtx = this.gaugeCanvas.getContext("2d", { alpha: true });
+  constructor(gaugeId, waveId) {
+    this.gaugeCanvas = document.getElementById(gaugeId);
+    this.waveCanvas = document.getElementById(waveId);
+    this.gCtx = this.gaugeCanvas.getContext("2d");
+    this.wCtx = this.waveCanvas.getContext("2d");
 
-    this.waveCanvas = document.getElementById(waveCanvasId);
-    this.waveCtx = this.waveCanvas.getContext("2d", { alpha: true });
-
-    this.currentValue = 0;
-    this.targetValue = 0;
-    this.maxScale = 1000;
+    this.currentSpeed = 0;
+    this.targetSpeed = 0;
+    this.velocity = 0;
+    this.maxScale = 250;
     this.mode = "IDLE";
-    this.wavePoints = [];
-    this.isAnimating = false;
-    this.scaleLabelAuto = "AUTO SCALE";
+    this.autoLabel = "AUTO SCALE";
+    this.wavePoints = Array(42).fill(0);
 
-    this.setupRetina();
+    this.setupHiDPI();
     window.addEventListener("resize", () => {
-      this.setupRetina();
+      this.setupHiDPI();
       this.renderOnce();
     });
+
+    this.animate = this.animate.bind(this);
+    requestAnimationFrame(this.animate);
+  }
+
+  setupHiDPI() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const gRect = this.gaugeCanvas.getBoundingClientRect();
+    const gw = gRect.width || 240;
+    const gh = gRect.height || 225;
+    this.gaugeCanvas.width = gw * dpr;
+    this.gaugeCanvas.height = gh * dpr;
+    this.gCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.gw = gw;
+    this.gh = gh;
+
+    const wRect = this.waveCanvas.getBoundingClientRect();
+    const ww = wRect.width || 280;
+    const wh = wRect.height || 54;
+    this.waveCanvas.width = ww * dpr;
+    this.waveCanvas.height = wh * dpr;
+    this.wCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.ww = ww;
+    this.wh = wh;
   }
 
   setAutoLabel(label) {
-    this.scaleLabelAuto = label;
-    if (this.maxScale === 1000) {
-      const ind = document.getElementById("scale-indicator");
-      if (ind) ind.textContent = label;
-    }
-  }
-
-  setupRetina() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    [this.gaugeCanvas, this.waveCanvas].forEach((canvas) => {
-      const rect = canvas.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        const ctx = canvas.getContext("2d");
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-    });
-    this.renderOnce();
-  }
-
-  wakeUp() {
-    if (!this.isAnimating) {
-      this.isAnimating = true;
-      this.animate();
-    }
+    this.autoLabel = label;
+    const badge = document.getElementById("scale-badge");
+    if (badge) badge.textContent = label;
   }
 
   setTarget(mbps, mode = "DOWNLOAD") {
-    this.targetValue = Math.max(0, mbps);
+    this.targetSpeed = Math.max(0, mbps);
     this.mode = mode;
 
-    if (mbps > 950 && this.maxScale < 10000) {
-      this.maxScale = 10000;
-      const ind = document.getElementById("scale-indicator");
-      if (ind) ind.textContent = "10G MAX";
-    }
-    if (mbps > 9500 && this.maxScale < 25000) {
-      this.maxScale = 25000;
-      const ind = document.getElementById("scale-indicator");
-      if (ind) ind.textContent = "25G MAX";
-    }
+    if (this.targetSpeed > 900) this.maxScale = 2500;
+    else if (this.targetSpeed > 420) this.maxScale = 1000;
+    else if (this.targetSpeed > 210) this.maxScale = 500;
+    else this.maxScale = 250;
 
-    if (mbps > 0) {
-      this.wavePoints.push(mbps);
-      if (this.wavePoints.length > 50) this.wavePoints.shift();
-    }
-    this.wakeUp();
+    this.wavePoints.push(this.targetSpeed);
+    if (this.wavePoints.length > 42) this.wavePoints.shift();
   }
 
   reset() {
-    this.targetValue = 0;
-    this.maxScale = 1000;
+    this.targetSpeed = 0;
+    this.currentSpeed = 0;
+    this.velocity = 0;
+    this.maxScale = 250;
     this.mode = "IDLE";
-    this.wavePoints = [];
-    const ind = document.getElementById("scale-indicator");
-    if (ind) ind.textContent = this.scaleLabelAuto;
-    this.wakeUp();
+    this.wavePoints = Array(42).fill(0);
+    this.renderOnce();
   }
 
-  speedToRatio(mbps) {
-    if (mbps <= 0) return 0;
-    const maxLog = Math.log10(this.maxScale + 1);
-    return Math.min(1, Math.log10(mbps + 1) / maxLog);
-  }
-
-  getTrackColor() {
-    return document.body.classList.contains("dark-theme")
-      ? "rgba(255, 255, 255, 0.09)"
-      : "rgba(15, 15, 20, 0.08)";
+  getActiveColor() {
+    if (this.mode === "UPLOAD") return "#f59e0b";
+    if (this.mode === "PING") return "#f43f5e";
+    return "#10b981";
   }
 
   drawGauge() {
-    const ctx = this.gaugeCtx;
-    const width = this.gaugeCanvas.clientWidth || 342;
-    const height = this.gaugeCanvas.clientHeight || 260;
+    const ctx = this.gCtx;
+    const w = this.gw;
+    const h = this.gh;
+    ctx.clearRect(0, 0, w, h);
 
-    ctx.clearRect(0, 0, width, height);
+    const isDark = document.body.classList.contains("dark-theme");
+    const cx = w / 2;
+    const cy = h * 0.54;
+    const radius = Math.min(w, h) * 0.37;
 
-    const cx = width / 2;
-    const cy = height / 2 + 16;
-    const radius = Math.min(width, height) * 0.51;
     const startAngle = Math.PI * 0.78;
     const endAngle = Math.PI * 2.22;
     const totalArc = endAngle - startAngle;
 
+    // Arka Plan Rayı
     ctx.beginPath();
     ctx.arc(cx, cy, radius, startAngle, endAngle);
-    ctx.lineWidth = 15;
+    ctx.lineWidth = 13;
     ctx.lineCap = "round";
-    ctx.strokeStyle = this.getTrackColor();
+    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.07)";
     ctx.stroke();
 
-    const ratio = this.speedToRatio(this.currentValue);
-    if (ratio > 0.004) {
-      const currentAngle = startAngle + totalArc * ratio;
-      const isUpload = this.mode === "UPLOAD";
-
-      const grad = ctx.createLinearGradient(0, height, width, 0);
-      if (isUpload) {
-        grad.addColorStop(0, "#f59e0b");
-        grad.addColorStop(1, "#ea580c");
-      } else {
-        grad.addColorStop(0, "#10b981");
-        grad.addColorStop(1, "#059669");
-      }
-
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, startAngle, currentAngle);
-      ctx.lineWidth = 24;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = isUpload
-        ? "rgba(245, 158, 11, 0.22)"
-        : "rgba(16, 185, 129, 0.22)";
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, startAngle, currentAngle);
-      ctx.lineWidth = 15;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = grad;
-      ctx.stroke();
-
-      const tipX = cx + Math.cos(currentAngle) * radius;
-      const tipY = cy + Math.sin(currentAngle) * radius;
-      ctx.beginPath();
-      ctx.arc(tipX, tipY, 4.6, 0, Math.PI * 2);
-      ctx.fillStyle = "#ffffff";
-      ctx.fill();
-    }
-
-    const ticks =
-      this.maxScale === 1000
-        ? [0, 10, 50, 100, 250, 500, 1000]
-        : this.maxScale === 10000
-        ? [0, 50, 250, 1000, 2500, 5000, 10000]
-        : [0, 100, 500, 2500, 5000, 10000, 25000];
-
-    ctx.font = "700 9.5px -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.fillStyle = "#868692";
+    // Ölçek İşaretleri (Ticks)
+    const ticks = [0, 0.2, 0.4, 0.6, 0.8, 1];
+    ctx.font = "600 9.5px 'JetBrains Mono', monospace";
     ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = isDark ? "rgba(255,255,255,0.35)" : "rgba(15,23,42,0.36)";
 
-    ticks.forEach((val) => {
-      const r = this.speedToRatio(val);
-      const angle = startAngle + totalArc * r;
-      const tx = cx + Math.cos(angle) * (radius - 23);
-      const ty = cy + Math.sin(angle) * (radius - 23);
-      const label = val >= 1000 ? `${val / 1000}G` : String(val);
-      ctx.fillText(label, tx, ty + 3);
+    ticks.forEach((t) => {
+      const ang = startAngle + totalArc * t;
+      const labelRadius = radius + 21;
+      const lx = cx + Math.cos(ang) * labelRadius;
+      const ly = cy + Math.sin(ang) * labelRadius;
+      const val = Math.round(this.maxScale * t);
+      ctx.fillText(val >= 1000 ? `${val / 1000}G` : String(val), lx, ly);
     });
+
+    // Aktif Hız Yayı
+    const ratio = Math.min(this.currentSpeed / this.maxScale, 1);
+    if (ratio > 0.002) {
+      const activeEnd = startAngle + totalArc * ratio;
+      const accent = this.getActiveColor();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, startAngle, activeEnd);
+      ctx.lineWidth = 13;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = accent;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 14;
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   drawWave() {
-    const ctx = this.waveCtx;
-    const width = this.waveCanvas.clientWidth || 312;
-    const height = this.waveCanvas.clientHeight || 76;
+    const ctx = this.wCtx;
+    const w = this.ww;
+    const h = this.wh;
+    ctx.clearRect(0, 0, w, h);
 
-    ctx.clearRect(0, 0, width, height);
-
-    if (this.wavePoints.length < 2) return;
-
-    const maxVal = Math.max(...this.wavePoints, 10) * 1.18;
-    const stepX = width / (50 - 1);
-    const isUpload = this.mode === "UPLOAD";
-    const activeColor = isUpload ? "#f59e0b" : "#10b981";
-
-    const pts = this.wavePoints.map((val, idx) => ({
-      x: idx * stepX,
-      y: height - (val / maxVal) * (height - 14) - 7
-    }));
+    const maxVal = Math.max(...this.wavePoints, 10);
+    const accent = this.getActiveColor();
+    const stepX = w / (this.wavePoints.length - 1);
 
     ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 0; i < pts.length - 1; i++) {
-      const xc = (pts[i].x + pts[i + 1].x) / 2;
-      const yc = (pts[i].y + pts[i + 1].y) / 2;
-      ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
-    }
-    const last = pts[pts.length - 1];
-    ctx.lineTo(last.x, last.y);
+    this.wavePoints.forEach((val, idx) => {
+      const x = idx * stepX;
+      const norm = val / (maxVal * 1.15);
+      const y = h - 5 - norm * (h - 12);
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
 
-    ctx.lineWidth = 2.6;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = activeColor;
+    ctx.lineWidth = 2.2;
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = accent;
     ctx.stroke();
 
-    const grad = ctx.createLinearGradient(0, 0, 0, height);
-    grad.addColorStop(
-      0,
-      isUpload ? "rgba(245, 158, 11, 0.24)" : "rgba(16, 185, 129, 0.24)"
-    );
-    grad.addColorStop(1, "rgba(0, 0, 0, 0)");
-
-    ctx.lineTo(last.x, height);
-    ctx.lineTo(0, height);
+    // Yumuşak Alan Dolgusu
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
     ctx.closePath();
+
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, this.mode === "UPLOAD" ? "rgba(245,158,11,0.22)" : "rgba(16,185,129,0.22)");
+    grad.addColorStop(1, "rgba(16,185,129,0.0)");
     ctx.fillStyle = grad;
     ctx.fill();
   }
@@ -228,16 +180,17 @@ class SpeedVisuals {
   }
 
   animate() {
-    const diff = this.targetValue - this.currentValue;
-    if (Math.abs(diff) < 0.05) {
-      this.currentValue = this.targetValue;
-      this.renderOnce();
-      this.isAnimating = false;
-      return;
+    // Yay fiziği (pürüzsüz iğne hareketi)
+    const force = (this.targetSpeed - this.currentSpeed) * 0.14;
+    this.velocity = (this.velocity + force) * 0.72;
+    this.currentSpeed += this.velocity;
+
+    if (Math.abs(this.targetSpeed - this.currentSpeed) < 0.01 && Math.abs(this.velocity) < 0.01) {
+      this.currentSpeed = this.targetSpeed;
     }
 
-    this.currentValue += diff * 0.16;
-    this.renderOnce();
-    requestAnimationFrame(() => this.animate());
+    this.drawGauge();
+    this.drawWave();
+    requestAnimationFrame(this.animate);
   }
 }
