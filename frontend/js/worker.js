@@ -8,31 +8,25 @@ const CONFIG = {
   warmupMs: 1000,
   chunkSizeMb: 15,
   uploadChunkBytes: 4 * 1024 * 1024,
-  edgeTimeoutMs: 3500,
+  edgeTimeoutMs: 3000,
   serverTimeoutMs: 6000,
   platformSamples: 5,
-  platformConcurrency: 3
+  platformConcurrency: 4
 };
 
 // Kullanıcıya en yakın Cloudflare Anycast noktası (yerel ping referansı)
 const LOCAL_EDGE_URL = "https://www.cloudflare.com/cdn-cgi/trace";
 
-// Not: Ölçüm "herhangi bir HTTP yanıtı gelene kadar geçen süre"dir. Dosya yolu geçerli olmak
-// zorunda değil (404 da olsa yanıt gelir), bu yüzden hash'li asset yerine /favicon.ico kullanıyoruz.
-// Tarayıcı UDP/oyun sunucularına ping atamaz; bunlar platformun web/CDN noktasına gecikmedir.
+// Yalnızca gerçek kenar (Edge CDN) düğümleri üzerinden yanıt veren 8 platform
 const PLATFORM_TARGETS = [
   { id: "youtube",   url: "https://www.youtube.com/generate_204" },
-  { id: "instagram", url: "https://www.instagram.com/favicon.ico" },
+  { id: "instagram", url: "https://static.cdninstagram.com/rsrc.php/v3/yI/r/VsNE-OHk_8a.png" },
   { id: "tiktok",    url: "https://www.tiktok.com/favicon.ico" },
-  { id: "x",         url: "https://x.com/favicon.ico" },
-  { id: "whatsapp",  url: "https://www.whatsapp.com/favicon.ico" },
+  { id: "x",         url: "https://abs.twimg.com/favicons/twitter.3.ico" },
+  { id: "whatsapp",  url: "https://static.whatsapp.net/rsrc.php/v3/yz/r/ujTY9i_Jhs1.png" },
   { id: "telegram",  url: "https://telegram.org/favicon.ico" },
-  { id: "cs2",       url: "https://store.steampowered.com/favicon.ico" },
-  { id: "valorant",  url: "https://playvalorant.com/favicon.ico" },
-  { id: "wildrift",  url: "https://wildrift.leagueoflegends.com/favicon.ico" },
-  { id: "lol",       url: "https://www.leagueoflegends.com/favicon.ico" },
-  { id: "pubg",      url: "https://www.pubgmobile.com/favicon.ico" },
-  { id: "discord",   url: "https://discord.com/favicon.ico" }
+  { id: "twitch",    url: "https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png" },
+  { id: "spotify",   url: "https://open.spotifycdn.com/cdn/images/favicon32.b64ecc03.png" }
 ];
 
 let abortController = null;
@@ -62,9 +56,6 @@ self.onmessage = async (e) => {
   }
 };
 
-/* ---------- Yardımcılar ---------- */
-
-// Zaman aşımlı fetch: dış iptal sinyali ile birleşir, zaman aşımını AbortError'dan ayırır.
 function timedFetch(url, options, timeoutMs, outerSignal) {
   const ctrl = new AbortController();
   let timedOut = false;
@@ -112,9 +103,6 @@ async function measureServerPing(baseUrl, signal) {
   return performance.now() - start;
 }
 
-// Yanıtın İLK bayt/başlık gelişine kadar geçen süre. Cache-bust (?t=) bilinçli olarak YOK:
-// CDN'in cache'li kopyası kullanılır, böylece ölçülen şey uzak origin değil kenar noktasına RTT olur.
-// redirect:"manual" => yönlendirme zincirini takip etmez, yalnızca ilk sıçramayı ölçer.
 async function measureEdgeRtt(url, signal) {
   const start = performance.now();
   await timedFetch(
@@ -144,7 +132,6 @@ function filterOutliers(rawSamples) {
   return filtered.length >= 4 ? filtered : sorted.slice(0, Math.max(4, sorted.length - 2));
 }
 
-// Ortalama: aykırı değerlerden arındırılmış. Min/Max/Jitter: ham veriden (sıçramalar gizlenmesin).
 function calculateStats(rawSamples) {
   if (!rawSamples.length) return { avg: 0, min: 0, max: 0, jitter: 0 };
   const avg = mean(filterOutliers(rawSamples));
@@ -163,7 +150,6 @@ function loadedAverage(samples) {
   return mean(filterOutliers(samples));
 }
 
-// Yük altında gecikme (bufferbloat): ısınma süresinden sonra başlar.
 function startBloatMonitor(baseUrl, signal, targetArray, delayMs) {
   let active = true;
   (async () => {
@@ -180,8 +166,6 @@ function startBloatMonitor(baseUrl, signal, targetArray, delayMs) {
   };
 }
 
-/* ---------- 1) Ping ---------- */
-
 async function runPingPhase(baseUrl, signal) {
   self.postMessage({ type: "PHASE", phase: "PING" });
   const localPings = [];
@@ -189,7 +173,6 @@ async function runPingPhase(baseUrl, signal) {
   let localFailed = 0;
   let serverFailed = 0;
 
-  // Isınma: DNS + TLS + radyo uyandırma
   for (let w = 0; w < 3; w++) {
     try { await measureEdgeRtt(LOCAL_EDGE_URL, signal); } catch (e) { if (isAbort(e)) throw e; }
   }
@@ -220,7 +203,6 @@ async function runPingPhase(baseUrl, signal) {
     await sleep(25);
   }
 
-  // Cloudflare ulaşılamıyorsa (kurumsal ağ vb.) test sunucusuna geri dön
   const useLocal = localPings.length > 0;
   const mainStats = calculateStats(useLocal ? localPings : serverPings);
   const serverStats = calculateStats(serverPings);
@@ -232,8 +214,6 @@ async function runPingPhase(baseUrl, signal) {
     packetLoss: (failed / CONFIG.pingCount) * 100
   };
 }
-
-/* ---------- 2) İndirme ---------- */
 
 async function runDownloadPhase(baseUrl, signal) {
   self.postMessage({ type: "PHASE", phase: "DOWNLOAD" });
@@ -283,7 +263,7 @@ async function runDownloadPhase(baseUrl, signal) {
             err.code = "RATE_LIMIT";
             throw err;
           }
-          break; // Çok hızlı hatlarda test ortasında limit dolduysa eldeki veriyle bitir
+          break;
         }
         if (!response.ok) throw new Error("Download stream error");
 
@@ -299,7 +279,7 @@ async function runDownloadPhase(baseUrl, signal) {
           lastByteTime = now;
 
           if (now - startTime >= CONFIG.warmupMs) {
-            if (measureStart === null) measureStart = now; // ilk parça saati başlatır, sayılmaz
+            if (measureStart === null) measureStart = now;
             else validBytes += value.byteLength;
           }
           if (now - startTime >= CONFIG.phaseDurationMs) {
@@ -310,11 +290,10 @@ async function runDownloadPhase(baseUrl, signal) {
       }
     } catch (err) {
       if (isAbort(err)) {
-        if (signal.aborted) throw err; // kullanıcı durdurdu
+        if (signal.aborted) throw err;
         return;
       }
       if (err.code === "RATE_LIMIT" || validBytes === 0) throw err;
-      // Veri akışı başladıktan sonraki tek seferlik hata testi öldürmesin
     }
   };
 
@@ -342,8 +321,6 @@ async function runDownloadPhase(baseUrl, signal) {
     samples: speedSamples
   };
 }
-
-/* ---------- 3) Yükleme (XHR: gerçek byte-bazlı ilerleme) ---------- */
 
 function createRandomPayload(sizeBytes) {
   const buffer = new Uint8Array(sizeBytes);
@@ -451,7 +428,7 @@ async function runUploadPhase(baseUrl, signal) {
     } catch (err) {
       if (isAbort(err)) {
         if (signal.aborted) throw err;
-        return; // faz süresi doldu: normal bitiş
+        return;
       }
       if (err.code === "RATE_LIMIT" || validBytes === 0) throw err;
     }
@@ -478,9 +455,6 @@ async function runUploadPhase(baseUrl, signal) {
   return { mbps: finalMbps, loadedPing: loadedAverage(loadedPings), samples: speedSamples };
 }
 
-/* ---------- Platform / Oyun erişim gecikmesi ---------- */
-
-// Dönüş: ms (>=0) | -1 erişilemiyor/engelli | -2 zaman aşımı | null iptal edildi
 async function measurePlatform(item, signal) {
   const samples = [];
   let blocked = 0;
@@ -490,12 +464,12 @@ async function measurePlatform(item, signal) {
     if (signal.aborted) return null;
     try {
       const rtt = await measureEdgeRtt(item.url, signal);
-      if (k > 0) samples.push(rtt); // k=0: ısınma (DNS + TLS), sayılmaz
+      if (k > 0) samples.push(rtt);
     } catch (err) {
       if (isAbort(err)) return null;
       if (err.name === "TimeoutError") timeouts++;
       else blocked++;
-      if (blocked + timeouts >= 2 && samples.length === 0) break; // ölü hedefte vakit kaybetme
+      if (blocked + timeouts >= 2 && samples.length === 0) break;
     }
   }
 
@@ -519,8 +493,6 @@ async function measurePlatforms(signal) {
   await Promise.all(runners);
   if (!signal.aborted) self.postMessage({ type: "PLATFORMS_DONE" });
 }
-
-/* ---------- Tam test ---------- */
 
 async function runFullSuite(baseUrl, signal) {
   const pingResult = await runPingPhase(baseUrl, signal);
