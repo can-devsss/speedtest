@@ -8,10 +8,10 @@ const CONFIG = {
   warmupMs: 1000,
   chunkSizeMb: 15,
   uploadChunkBytes: 4 * 1024 * 1024,
-  edgeTimeoutMs: 3000,
+  edgeTimeoutMs: 4500,
   serverTimeoutMs: 6000,
-  platformSamples: 5,
-  platformConcurrency: 4
+  platformSamples: 4,
+  platformConcurrency: 2
 };
 
 // Kullanıcıya en yakın Cloudflare Anycast noktası (yerel ping referansı)
@@ -103,12 +103,13 @@ async function measureServerPing(baseUrl, signal) {
   return performance.now() - start;
 }
 
+// GET ile ilk yanıt/başlık gelişine kadar geçen süre (HEAD reddeden uç noktalar için daha kararlı)
 async function measureEdgeRtt(url, signal) {
   const start = performance.now();
   await timedFetch(
     url,
     {
-      method: "HEAD",
+      method: "GET",
       mode: "no-cors",
       cache: "no-store",
       redirect: "manual",
@@ -469,8 +470,10 @@ async function measurePlatform(item, signal) {
       if (isAbort(err)) return null;
       if (err.name === "TimeoutError") timeouts++;
       else blocked++;
-      if (blocked + timeouts >= 2 && samples.length === 0) break;
+      // Mobil bağlantıda tek seferlik takılmaya hemen pes etme; 3 başarısız denemeden sonra vazgeç
+      if (blocked + timeouts >= 3 && samples.length === 0) break;
     }
+    await sleep(40);
   }
 
   if (!samples.length) return timeouts > blocked ? -2 : -1;
