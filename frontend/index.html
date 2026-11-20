@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f7f5f2" id="meta-theme-color" />
   <title>Speedtest Engine • Zero-Log Telemetry</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/style.css?v=3" />
 </head>
 <body>
   <div class="ambient-bg" aria-hidden="true">
@@ -41,19 +42,19 @@
         </div>
 
         <div class="action-pills">
-          <button type="button" class="ctrl-btn" id="history-open-btn">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+          <button type="button" class="ctrl-btn" id="history-open-btn" aria-haspopup="dialog">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
             <span data-i18n="historyBtn">HISTORY</span>
             <span class="count-chip num" id="history-count">0</span>
           </button>
 
           <button type="button" class="ctrl-btn" id="lang-toggle">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
             <span id="lang-label">TR</span>
           </button>
 
           <button type="button" class="ctrl-btn" id="theme-toggle">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
             <span id="theme-label">DARK</span>
           </button>
         </div>
@@ -74,24 +75,26 @@
         </div>
 
         <div class="gauge-stage">
-          <canvas id="speed-gauge"></canvas>
-          <div class="gauge-readout">
-            <div class="speed-number num" id="live-speed">0.00</div>
-            <button type="button" class="unit-toggle-btn" id="unit-toggle-btn" title="Mbps / MB/s">
-              <span id="live-unit">Mbps</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 10l5-5 5 5"/><path d="M17 14l-5 5-5-5"/></svg>
-            </button>
+          <div class="gauge-dial">
+            <canvas id="speed-gauge" aria-hidden="true"></canvas>
+            <div class="gauge-readout">
+              <div class="speed-number num" id="live-speed" aria-live="off">0.00</div>
+              <button type="button" class="unit-toggle-btn" id="unit-toggle-btn" title="Mbps / MB/s">
+                <span id="live-unit">Mbps</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M7 10l5-5 5 5"/><path d="M17 14l-5 5-5-5"/></svg>
+              </button>
+            </div>
           </div>
-          <div class="phase-badge" id="test-phase">READY</div>
+          <div class="phase-badge" id="test-phase" role="status" aria-live="polite">READY</div>
         </div>
 
         <div class="cta-row">
           <button type="button" class="primary-btn" id="start-btn">
-            <span class="btn-icon" id="btn-icon">▶</span>
+            <span class="btn-icon" id="btn-icon" aria-hidden="true">▶</span>
             <span id="btn-text">Start Test</span>
           </button>
           <button type="button" class="secondary-btn hidden" id="copy-report-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             <span id="copy-text">Copy</span>
           </button>
         </div>
@@ -99,12 +102,12 @@
         <div class="wave-box">
           <div class="wave-header">
             <span class="wave-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               <span data-i18n="stabilityLabel">Throughput Stability</span>
             </span>
             <span class="wave-val num" id="stability-score">--%</span>
           </div>
-          <canvas id="wave-chart"></canvas>
+          <canvas id="wave-chart" aria-hidden="true"></canvas>
         </div>
       </article>
 
@@ -116,7 +119,7 @@
             <div class="metric-head">
               <span class="metric-label" data-i18n="downloadLabel">DOWNLOAD</span>
               <span class="icon-chip chip-emerald">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>
               </span>
             </div>
             <div class="metric-value-row">
@@ -130,7 +133,7 @@
             <div class="metric-head">
               <span class="metric-label" data-i18n="uploadLabel">UPLOAD</span>
               <span class="icon-chip chip-amber">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M5 20h14"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M5 20h14"/></svg>
               </span>
             </div>
             <div class="metric-value-row">
@@ -144,7 +147,7 @@
             <div class="metric-head">
               <span class="metric-label" data-i18n="pingLabel">LOCAL PING</span>
               <span class="icon-chip chip-coral">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
               </span>
             </div>
             <div class="metric-value-row">
@@ -158,7 +161,7 @@
             <div class="metric-head">
               <span class="metric-label" data-i18n="jitterLabel">JITTER</span>
               <span class="icon-chip chip-violet">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               </span>
             </div>
             <div class="metric-value-row">
@@ -169,19 +172,18 @@
           </article>
         </div>
 
-        <!-- Orta Hat Kalite Endeksi -->
+        <!-- Hat Kalite Endeksi -->
         <article class="quality-card glass-panel">
           <div class="quality-top">
             <div class="quality-info">
               <span class="icon-chip chip-emerald">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               </span>
               <div class="quality-texts">
                 <h2 data-i18n="qualityTitle">Line Quality Index</h2>
                 <p id="quality-verdict" data-i18n="qualityReadyDesc">Run a test to evaluate overall connection health</p>
               </div>
             </div>
-
             <div class="score-pill num">
               <span id="quality-score">--</span><small>/100</small>
             </div>
@@ -201,14 +203,13 @@
 
         <!-- Alt İkili Analiz Kartları -->
         <div class="bottom-row">
-          <!-- Bufferbloat -->
           <article class="detail-card glass-panel">
             <div class="detail-head">
               <div class="detail-title-group">
                 <span class="icon-chip chip-amber">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg>
                 </span>
-                <div>
+                <div class="title-text">
                   <h3 data-i18n="bufferbloatTitle">Bufferbloat</h3>
                   <p data-i18n="bufferbloatDesc">Latency inflation under load</p>
                 </div>
@@ -232,14 +233,13 @@
             </div>
           </article>
 
-          <!-- Line Telemetry -->
           <article class="detail-card glass-panel">
             <div class="detail-head">
               <div class="detail-title-group">
                 <span class="icon-chip chip-violet">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg>
                 </span>
-                <div>
+                <div class="title-text">
                   <h3 data-i18n="diagnosticsTitle">Line Telemetry</h3>
                   <p data-i18n="diagnosticsDesc">Response & routing metadata</p>
                 </div>
@@ -264,139 +264,36 @@
           </article>
         </div>
 
-        <!-- Açılır / Kapanır Platform & Oyun Gecikme Sekmesi (12 Platform) -->
+        <!-- Uygulama & Oyun erişim gecikmesi -->
         <article class="platform-accordion glass-panel" id="platform-accordion">
-          <div class="accordion-header" id="platform-toggle-header" role="button" tabindex="0" aria-expanded="true">
-            <div class="detail-title-group">
+          <div class="accordion-header">
+            <button type="button" class="accordion-toggle detail-title-group" id="platform-toggle" aria-expanded="true" aria-controls="platform-body">
               <span class="icon-chip chip-emerald">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
               </span>
-              <div class="accordion-title-wrap">
+              <span class="accordion-title-wrap title-text">
                 <h3 data-i18n="platformTitle">Apps & Games Ping</h3>
                 <p data-i18n="platformDesc">Personal latency from your own connection</p>
-              </div>
-            </div>
+              </span>
+            </button>
 
             <div class="accordion-actions">
               <button type="button" class="mini-ping-btn" id="ping-apps-btn">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                 <span data-i18n="pingAppsBtn">Measure</span>
               </button>
-              <span class="chevron-pill" id="accordion-chevron" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="6 9 12 15 18 9"/></svg>
-              </span>
+              <button type="button" class="chevron-pill" id="accordion-chevron" aria-label="Toggle" aria-controls="platform-body" aria-expanded="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
             </div>
           </div>
 
           <div class="accordion-body" id="platform-body">
-            <div class="platform-grid" id="platform-grid">
-              <!-- YouTube -->
-              <div class="plat-card" data-plat="youtube">
-                <span class="plat-icon icon-yt">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.4 31.4 0 0 0 0 12a31.4 31.4 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.4 31.4 0 0 0 24 12a31.4 31.4 0 0 0-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
-                </span>
-                <span class="plat-name">YouTube</span>
-                <span class="plat-ms num" id="plat-ms-youtube">-- ms</span>
-              </div>
-
-              <!-- Instagram -->
-              <div class="plat-card" data-plat="instagram">
-                <span class="plat-icon icon-ig">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
-                </span>
-                <span class="plat-name">Instagram</span>
-                <span class="plat-ms num" id="plat-ms-instagram">-- ms</span>
-              </div>
-
-              <!-- TikTok -->
-              <div class="plat-card" data-plat="tiktok">
-                <span class="plat-icon icon-tt">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
-                </span>
-                <span class="plat-name">TikTok</span>
-                <span class="plat-ms num" id="plat-ms-tiktok">-- ms</span>
-              </div>
-
-              <!-- X -->
-              <div class="plat-card" data-plat="x">
-                <span class="plat-icon icon-x">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                </span>
-                <span class="plat-name">X</span>
-                <span class="plat-ms num" id="plat-ms-x">-- ms</span>
-              </div>
-
-              <!-- WhatsApp -->
-              <div class="plat-card" data-plat="whatsapp">
-                <span class="plat-icon icon-wa">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91C21.95 6.45 17.5 2 12.04 2zm5.82 14.01c-.24.68-1.41 1.3-1.95 1.38-.5.08-1.13.11-1.82-.11-.42-.13-.96-.31-1.65-.61-2.9-1.25-4.79-4.17-4.94-4.36-.14-.19-1.18-1.57-1.18-3 0-1.43.75-2.13 1.01-2.42.27-.29.58-.36.78-.36.19 0 .39 0 .56.01.18.01.42-.07.66.5.24.58.82 2.01.89 2.15.07.15.12.32.02.51-.1.19-.15.31-.29.48-.15.17-.31.38-.44.51-.15.15-.3.31-.13.61.17.29.76 1.25 1.63 2.03 1.12 1 2.06 1.31 2.36 1.46.29.15.46.12.63-.07.17-.19.73-.85.92-1.14.19-.29.39-.24.66-.15.27.1 1.7.8 1.99.95.29.14.48.22.55.34.07.12.07.69-.17 1.37z"/></svg>
-                </span>
-                <span class="plat-name">WhatsApp</span>
-                <span class="plat-ms num" id="plat-ms-whatsapp">-- ms</span>
-              </div>
-
-              <!-- Telegram -->
-              <div class="plat-card" data-plat="telegram">
-                <span class="plat-icon icon-tg">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-                </span>
-                <span class="plat-name">Telegram</span>
-                <span class="plat-ms num" id="plat-ms-telegram">-- ms</span>
-              </div>
-
-              <!-- CS2 (Valve) -->
-              <div class="plat-card" data-plat="cs2">
-                <span class="plat-icon icon-cs">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="2.2"/></svg>
-                </span>
-                <span class="plat-name">CS2</span>
-                <span class="plat-ms num" id="plat-ms-cs2">-- ms</span>
-              </div>
-
-              <!-- Valorant -->
-              <div class="plat-card" data-plat="valorant">
-                <span class="plat-icon icon-val">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2 4l9.5 16h4.2L6.2 4H2zm20 0h-4.2l-5.3 8.9 2.1 3.6L22 4z"/></svg>
-                </span>
-                <span class="plat-name">Valorant</span>
-                <span class="plat-ms num" id="plat-ms-valorant">-- ms</span>
-              </div>
-
-              <!-- Wild Rift -->
-              <div class="plat-card" data-plat="wildrift">
-                <span class="plat-icon icon-wr">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 4.2l4.5 2.8v5.6L12 17.4l-4.5-2.8V9L12 6.2z"/></svg>
-                </span>
-                <span class="plat-name">Wild Rift</span>
-                <span class="plat-ms num" id="plat-ms-wildrift">-- ms</span>
-              </div>
-
-              <!-- LoL -->
-              <div class="plat-card" data-plat="lol">
-                <span class="plat-icon icon-lol">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h5v14h9v4H5V3z"/></svg>
-                </span>
-                <span class="plat-name">LoL</span>
-                <span class="plat-ms num" id="plat-ms-lol">-- ms</span>
-              </div>
-
-              <!-- PUBG Mobile -->
-              <div class="plat-card" data-plat="pubg">
-                <span class="plat-icon icon-pubg">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 7h16v10H4V7zm3 2v6h2v-2h2a2 2 0 0 0 0-4H7zm2 1.5h1.8a.5.5 0 0 1 0 1H9v-1zm5-1.5v6h3v-1.5h-1.5v-1H17V11h-1.5v-.5H17V9h-3z"/></svg>
-                </span>
-                <span class="plat-name">PUBG</span>
-                <span class="plat-ms num" id="plat-ms-pubg">-- ms</span>
-              </div>
-
-              <!-- Discord -->
-              <div class="plat-card" data-plat="discord">
-                <span class="plat-icon icon-dc">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
-                </span>
-                <span class="plat-name">Discord</span>
-                <span class="plat-ms num" id="plat-ms-discord">-- ms</span>
-              </div>
+            <div class="accordion-inner">
+              <div class="platform-grid" id="platform-grid"></div>
+              <p class="platform-note" data-i18n="platformNote">
+                Browsers cannot send game (UDP) pings. Values are the round-trip time from your connection to each platform's nearest web/CDN endpoint, so in-game ping may differ.
+              </p>
             </div>
           </div>
         </article>
@@ -410,10 +307,11 @@
 
   <!-- Geçmiş Çekmecesi -->
   <div class="drawer-backdrop" id="drawer-backdrop"></div>
-  <aside class="history-drawer" id="history-drawer" aria-hidden="true">
+  <aside class="history-drawer" id="history-drawer" role="dialog" aria-modal="true" aria-labelledby="history-title" aria-hidden="true">
+    <div class="drawer-grabber" aria-hidden="true"></div>
     <div class="drawer-head">
       <div>
-        <h3 data-i18n="historyTitle">Test History</h3>
+        <h3 id="history-title" data-i18n="historyTitle">Test History</h3>
         <p data-i18n="historySub">Stored locally on this device</p>
       </div>
       <div class="drawer-actions">
@@ -426,11 +324,11 @@
       <table class="history-table">
         <thead>
           <tr>
-            <th data-i18n="thDate">Date</th>
-            <th data-i18n="thDownload">Down</th>
-            <th data-i18n="thUpload">Up</th>
-            <th data-i18n="thPing">Ping</th>
-            <th data-i18n="thGrade">Bloat</th>
+            <th><span data-i18n="thDate">Date</span></th>
+            <th><span data-i18n="thDownload">Down</span><small class="th-unit"></small></th>
+            <th><span data-i18n="thUpload">Up</span><small class="th-unit"></small></th>
+            <th><span data-i18n="thPing">Ping</span></th>
+            <th><span data-i18n="thGrade">Bloat</span></th>
           </tr>
         </thead>
         <tbody id="history-body"></tbody>
@@ -438,7 +336,7 @@
     </div>
   </aside>
 
-  <script src="/js/gauge.js"></script>
-  <script src="/js/app.js"></script>
+  <script src="/js/gauge.js?v=3"></script>
+  <script src="/js/app.js?v=3"></script>
 </body>
 </html>
