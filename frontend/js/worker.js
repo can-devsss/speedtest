@@ -7,9 +7,10 @@ const CONFIG = {
   chunkSizeMb: 15
 };
 
-// Tek ve tutarlı yerel Anycast Edge noktası (Jitter sapmasını sıfırlar)
+// Kullanıcının bulunduğu şehir ve operatöre göre en yakın Anycast Edge noktası
 const LOCAL_EDGE_URL = "https://www.cloudflare.com/cdn-cgi/trace";
 
+// 12 Platform & Oyun için kullanıcının kendi cihazından doğrudan ölçülen gerçek uç noktalar
 const PLATFORM_TARGETS = [
   { id: "youtube", url: "https://www.youtube.com/favicon.ico" },
   { id: "instagram", url: "https://www.instagram.com/favicon.ico" },
@@ -17,10 +18,12 @@ const PLATFORM_TARGETS = [
   { id: "x", url: "https://abs.twimg.com/favicons/twitter.3.ico" },
   { id: "whatsapp", url: "https://static.whatsapp.net/rsrc.php/v3/yz/r/ujTY9i_Jhs1.png" },
   { id: "telegram", url: "https://telegram.org/favicon.ico" },
-  { id: "steam", url: "https://store.steampowered.com/favicon.ico" },
-  { id: "discord", url: "https://discord.com/assets/f9bb9c4af2b9c32a2c5ee0014661546d.png" },
-  { id: "twitch", url: "https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png" },
-  { id: "spotify", url: "https://open.spotifycdn.com/cdn/images/favicon32.b64ecc03.png" }
+  { id: "cs2", url: "https://steamcommunity.com/favicon.ico" },
+  { id: "valorant", url: "https://playvalorant.com/favicon.ico" },
+  { id: "wildrift", url: "https://wildrift.leagueoflegends.com/favicon.ico" },
+  { id: "lol", url: "https://www.leagueoflegends.com/favicon.ico" },
+  { id: "pubg", url: "https://www.pubgmobile.com/favicon.ico" },
+  { id: "discord", url: "https://discord.com/assets/f9bb9c4af2b9c32a2c5ee0014661546d.png" }
 ];
 
 let abortController = null;
@@ -120,7 +123,7 @@ async function runPingPhase(baseUrl, signal) {
   const euPings = [];
   let failed = 0;
 
-  // 4 ısınma isteği: DNS, TLS ve mobil Wi-Fi radyosunu tam uyanık moda alır
+  // 4 ön-ısıtma isteği: DNS, TLS ve mobil Wi-Fi radyosunu tam uyanık moda alır
   for (let w = 0; w < 4; w++) {
     try {
       await measureEdgeRtt(LOCAL_EDGE_URL, signal);
@@ -130,12 +133,9 @@ async function runPingPhase(baseUrl, signal) {
 
   for (let i = 0; i < CONFIG.pingCount; i++) {
     try {
-      const rawRtt = await measureEdgeRtt(LOCAL_EDGE_URL, signal);
-      // Tarayıcı HTTP/2 + CDN katmanının sabit ~18ms ek yükünü arındırarak saf hat RTT'sini hesaplar
-      const pureLineRtt = Math.max(4, rawRtt - 18);
-      localPings.push(pureLineRtt);
+      const rtt = await measureEdgeRtt(LOCAL_EDGE_URL, signal);
+      localPings.push(rtt);
 
-      // Her 4 adımda bir Frankfurt sunucusuna da gerçek gecikme ölçülür
       if (i % 4 === 0) {
         const euRtt = await measureServerPing(baseUrl, signal);
         euPings.push(euRtt);
@@ -143,7 +143,7 @@ async function runPingPhase(baseUrl, signal) {
 
       self.postMessage({
         type: "PING_TICK",
-        current: pureLineRtt,
+        current: rtt,
         stats: calculateStats(localPings)
       });
     } catch (err) {
@@ -164,16 +164,23 @@ async function runPingPhase(baseUrl, signal) {
   };
 }
 
+// Her platform için 1 ısınma + 3 ardışık ölçümün ortancasını (median) alır
 async function measurePlatforms(signal) {
   for (const item of PLATFORM_TARGETS) {
     if (signal && signal.aborted) break;
     try {
       await measureEdgeRtt(item.url, signal);
-      const rtt = await measureEdgeRtt(item.url, signal);
+      const samples = [];
+      for (let k = 0; k < 3; k++) {
+        const rtt = await measureEdgeRtt(item.url, signal);
+        samples.push(rtt);
+      }
+      samples.sort((a, b) => a - b);
+      const medianMs = Math.round(samples[1]);
       self.postMessage({
         type: "PLATFORM_TICK",
         id: item.id,
-        ms: Math.round(rtt)
+        ms: medianMs
       });
     } catch (_) {
       self.postMessage({
