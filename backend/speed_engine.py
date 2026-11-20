@@ -3,23 +3,34 @@ import time
 import ipaddress
 from collections import defaultdict
 from typing import AsyncGenerator
+
 import httpx
 from fastapi import Request, HTTPException
+from starlette.requests import ClientDisconnect
 
-RANDOM_CHUNK_SIZE = 1024 * 1024  # 1 MB sikistirilamaz veri havuzu
+MB = 1024 * 1024
+RANDOM_CHUNK_SIZE = 1 * MB  # 1 MB sikistirilamaz veri havuzu
 RANDOM_BUFFER = os.urandom(RANDOM_CHUNK_SIZE)
+
+MAX_DOWNLOAD_MB = 25          # tek istekte max indirme
+MAX_UPLOAD_BYTES = 25 * MB    # tek istekte max yukleme
 
 # Rate-limit onleyici GeoIP onbellegi (TTL: 10 dk)
 _GEO_CACHE: dict[str, tuple[float, dict]] = {}
 GEO_CACHE_TTL = 600
 
-# Kredi ve bant genisligi korumasi: IP basina dakikada max 2 tam test (14 stream istegi)
-_RATE_LOG: dict[str, list[float]] = defaultdict(list)
+# Kredi / bant genisligi korumasi: ISTEK SAYISI yerine BAYT BUTCESI.
+# Eski sinir (dakikada 14 istek) hizli hatlarda test ortasinda 429 uretiyordu.
+# Ortam degiskeniyle ayarlanabilir: DOWNLOAD_BUDGET_MB / UPLOAD_BUDGET_MB
 RATE_WINDOW_SEC = 60
-MAX_STREAM_REQUESTS_PER_WINDOW = 14
+DOWNLOAD_BUDGET_BYTES = int(os.getenv("DOWNLOAD_BUDGET_MB", "1500")) * MB
+UPLOAD_BUDGET_BYTES = int(os.getenv("UPLOAD_BUDGET_MB", "800")) * MB
+
+_USAGE: dict[tuple[str, str], list[tuple[float, int]]] = defaultdict(list)
 
 
 def extract_client_ip(request: Request) -> str:
+    # NOT: Proxy arkasinda degilseniz bu basliklar taklit edilebilir (limit asilabilir).
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
         return forwarded.split(",")[0].strip()
@@ -29,32 +40,50 @@ def extract_client_ip(request: Request) -> str:
     return request.client.host if request.client else "127.0.0.1"
 
 
-def enforce_bandwidth_quota(request: Request) -> None:
-    """Ayni IP'nin krediyi tuketmesini onlemek icin dakikadaki test sayisini sinirlar."""
-    ip = extract_client_ip(request)
-    now = time.time()
+def _window_usage(key: tuple[str, str], now: float) -> tuple[list[tuple[float, int]], int]:
+    entries = [e for e in _USAGE[key] if now - e[0] < RATE_WINDOW_SEC]
+    _USAGE[key] = entries
+    return entries, sum(n for _, n in entries)
 
-    timestamps = [t for t in _RATE_LOG[ip] if now - t < RATE_WINDOW_SEC]
-    if len(timestamps) >= MAX_STREAM_REQUESTS_PER_WINDOW:
-        _RATE_LOG[ip] = timestamps
+
+def _cleanup(now: float) -> None:
+    if len(_USAGE) > 2048:
+        stale = [k for k, v in _USAGE.items() if not v or now - v[-1][0] >= RATE_WINDOW_SEC]
+        for k in stale:
+            del _USAGE[k]
+
+
+def _check_budget(kind: str, ip: str, budget: int, now: float) -> None:
+    entries, used = _window_usage((kind, ip), now)
+    if used >= budget:
+        oldest = entries[0][0] if entries else now
+        retry_after = max(1, int(RATE_WINDOW_SEC - (now - oldest)) + 1)
         raise HTTPException(
             status_code=429,
-            detail="Rate limit exceeded. Please wait 60 seconds before running another test.",
+            detail="Rate limit exceeded. Please wait before running another test.",
+            headers={"Retry-After": str(retry_after)},
         )
 
-    timestamps.append(now)
-    _RATE_LOG[ip] = timestamps
 
-    # Bellek sismanlamasini onlemek icin periyodik temizlik
-    if len(_RATE_LOG) > 1024:
-        stale_ips = [k for k, v in _RATE_LOG.items() if not v or (now - v[-1] > RATE_WINDOW_SEC)]
-        for k in stale_ips:
-            del _RATE_LOG[k]
+def enforce_bandwidth_quota(request: Request) -> None:
+    """Indirme istegi baslamadan once IP basina dakikalik bayt butcesini kontrol eder ve
+    istenen boyutu butceye yazar (main.py degistirmeden calisir)."""
+    now = time.time()
+    ip = extract_client_ip(request)
+    _check_budget("down", ip, DOWNLOAD_BUDGET_BYTES, now)
+
+    try:
+        size_mb = int(request.query_params.get("size", "15"))
+    except ValueError:
+        size_mb = 15
+    size_mb = max(1, min(size_mb, MAX_DOWNLOAD_MB))
+
+    _USAGE[("down", ip)].append((now, size_mb * MB))
+    _cleanup(now)
 
 
 async def generate_download_stream(size_mb: int) -> AsyncGenerator[bytes, None]:
-    # Tek istekte maksimum 25 MB ile sinirlandirildi
-    total_bytes = max(1, min(size_mb, 25)) * 1024 * 1024
+    total_bytes = max(1, min(size_mb, MAX_DOWNLOAD_MB)) * MB
     bytes_sent = 0
 
     while bytes_sent < total_bytes:
@@ -68,14 +97,24 @@ async def generate_download_stream(size_mb: int) -> AsyncGenerator[bytes, None]:
 
 
 async def consume_upload_stream(request: Request) -> dict:
+    ip = extract_client_ip(request)
+    _check_budget("up", ip, UPLOAD_BUDGET_BYTES, time.time())
+
     start_time = time.perf_counter()
     total_bytes = 0
-    max_upload_bytes = 25 * 1024 * 1024  # Tek istekte max 25 MB koruma
 
-    async for chunk in request.stream():
-        total_bytes += len(chunk)
-        if total_bytes > max_upload_bytes:
-            raise HTTPException(status_code=413, detail="Payload exceeds limit.")
+    try:
+        async for chunk in request.stream():
+            total_bytes += len(chunk)
+            if total_bytes > MAX_UPLOAD_BYTES:
+                raise HTTPException(status_code=413, detail="Payload exceeds limit.")
+    except ClientDisconnect:
+        # Istemci sure dolunca istegi iptal eder; bu bir hata degil, 500 uretmesin.
+        pass
+    finally:
+        now = time.time()
+        _USAGE[("up", ip)].append((now, total_bytes))
+        _cleanup(now)
 
     elapsed = max(time.perf_counter() - start_time, 0.0001)
     mbps = (total_bytes * 8) / (elapsed * 1_000_000)
