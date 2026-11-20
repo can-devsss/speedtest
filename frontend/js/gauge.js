@@ -27,8 +27,8 @@ class SpeedVisuals {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     const gRect = this.gaugeCanvas.getBoundingClientRect();
-    const gw = gRect.width || 246;
-    const gh = gRect.height || 228;
+    const gw = gRect.width || 264;
+    const gh = gRect.height || 230;
     this.gaugeCanvas.width = gw * dpr;
     this.gaugeCanvas.height = gh * dpr;
     this.gCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -37,7 +37,7 @@ class SpeedVisuals {
 
     const wRect = this.waveCanvas.getBoundingClientRect();
     const ww = wRect.width || 280;
-    const wh = wRect.height || 54;
+    const wh = wRect.height || 52;
     this.waveCanvas.width = ww * dpr;
     this.waveCanvas.height = wh * dpr;
     this.wCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -99,11 +99,11 @@ class SpeedVisuals {
 
     const isDark = document.body.classList.contains("dark-theme");
     const cx = w / 2;
-    const cy = h * 0.54;
-    const radius = Math.min(w, h) * 0.37;
+    const cy = h * 0.52;
+    const radius = Math.min(w, h) * 0.39;
 
-    const startAngle = Math.PI * 0.78;
-    const endAngle = Math.PI * 2.22;
+    const startAngle = Math.PI * 0.8;
+    const endAngle = Math.PI * 2.2;
     const totalArc = endAngle - startAngle;
 
     // Arka Plan Rayı
@@ -111,19 +111,19 @@ class SpeedVisuals {
     ctx.arc(cx, cy, radius, startAngle, endAngle);
     ctx.lineWidth = 14;
     ctx.lineCap = "round";
-    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.09)" : "rgba(28,25,23,0.08)";
+    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.09)" : "rgba(24,21,18,0.08)";
     ctx.stroke();
 
     // Ölçek İşaretleri
     const ticks = [0, 0.2, 0.4, 0.6, 0.8, 1];
-    ctx.font = "700 10px 'JetBrains Mono', monospace";
+    ctx.font = "700 10px -apple-system, BlinkMacSystemFont, 'Inter', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = isDark ? "rgba(255,255,255,0.42)" : "rgba(28,25,23,0.42)";
+    ctx.fillStyle = isDark ? "rgba(255,255,255,0.42)" : "rgba(24,21,18,0.42)";
 
     ticks.forEach((t) => {
       const ang = startAngle + totalArc * t;
-      const labelRadius = radius + 22;
+      const labelRadius = radius + 21;
       const lx = cx + Math.cos(ang) * labelRadius;
       const ly = cy + Math.sin(ang) * labelRadius;
       const val = Math.round(this.maxScale * t);
@@ -143,7 +143,7 @@ class SpeedVisuals {
       ctx.lineCap = "round";
       ctx.strokeStyle = accent;
       ctx.shadowColor = accent;
-      ctx.shadowBlur = 16;
+      ctx.shadowBlur = 15;
       ctx.stroke();
       ctx.restore();
     }
@@ -179,7 +179,7 @@ class SpeedVisuals {
     ctx.closePath();
 
     const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, this.mode === "UPLOAD" ? "rgba(245,158,11,0.25)" : "rgba(16,185,129,0.25)");
+    grad.addColorStop(0, this.mode === "UPLOAD" ? "rgba(245,158,11,0.24)" : "rgba(16,185,129,0.24)");
     grad.addColorStop(1, "rgba(16,185,129,0.0)");
     ctx.fillStyle = grad;
     ctx.fill();
