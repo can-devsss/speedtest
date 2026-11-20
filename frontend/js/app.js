@@ -5,7 +5,7 @@ let networkMetadata = null;
 let lastReportData = null;
 let currentLang = localStorage.getItem("speedtest_lang") || "en";
 let currentPhaseKey = "ready";
-let displayUnit = "Mbps"; // "Mbps" veya "MB/s"
+let displayUnit = "Mbps";
 let rawLiveMbps = 0;
 let rawDlMbps = null;
 let rawUlMbps = null;
@@ -18,6 +18,8 @@ const I18N = {
     localLoopbackIsp: "Local Loopback",
     localLoopbackCity: "Localhost",
     historyBtn: "HISTORY",
+    themeDark: "DARK",
+    themeLight: "LIGHT",
     stepPing: "PING",
     stepDown: "DOWN",
     stepUp: "UP",
@@ -80,6 +82,8 @@ const I18N = {
     localLoopbackIsp: "Yerel Ağ Testi",
     localLoopbackCity: "Localhost",
     historyBtn: "GEÇMİŞ",
+    themeDark: "KOYU",
+    themeLight: "AÇIK",
     stepPing: "PING",
     stepDown: "İNDİR",
     stepUp: "YÜKLE",
@@ -193,6 +197,11 @@ function t(key) {
   return I18N[currentLang][key] || key;
 }
 
+function updateThemeButtonLabel() {
+  const isDark = document.body.classList.contains("dark-theme");
+  els.themeLabel.textContent = isDark ? t("themeLight") : t("themeDark");
+}
+
 function updatePhaseVisuals(phaseKey) {
   els.cardDownload.classList.remove("card-active-emerald");
   els.cardUpload.classList.remove("card-active-amber");
@@ -300,6 +309,7 @@ function renderMinMaxLabel(minVal, maxVal) {
 function applyLanguage() {
   document.documentElement.lang = currentLang;
   els.langLabel.textContent = currentLang === "en" ? "TR" : "EN";
+  updateThemeButtonLabel();
   visuals.setAutoLabel(t("autoScale"));
 
   document.querySelectorAll("[data-i18n]").forEach((node) => {
@@ -316,6 +326,8 @@ function applyLanguage() {
   } else {
     els.btnText.textContent = t("startBtn");
   }
+
+  els.copyText.textContent = t("copyBtn");
 
   setPhase(currentPhaseKey);
   renderNetworkLabel();
@@ -351,14 +363,15 @@ function initTheme() {
   const saved = localStorage.getItem("speedtest_theme");
   if (saved === "dark") {
     document.body.classList.add("dark-theme");
-    els.themeLabel.textContent = "LIGHT";
   }
+  updateThemeButtonLabel();
 }
 
 els.themeToggle.addEventListener("click", () => {
-  const isDark = document.body.classList.toggle("dark-theme");
+  document.body.classList.toggle("dark-theme");
+  const isDark = document.body.classList.contains("dark-theme");
   localStorage.setItem("speedtest_theme", isDark ? "dark" : "light");
-  els.themeLabel.textContent = isDark ? "LIGHT" : "DARK";
+  updateThemeButtonLabel();
   visuals.renderOnce();
 });
 
@@ -524,6 +537,7 @@ function finalizeResults(res) {
   renderSpeedValues();
 
   visuals.setTarget(dl, "DOWNLOAD");
+  visuals.setFinalSamples(res.download.samples);
   setPhase("completed");
 
   els.resPing.textContent = ping.toFixed(1);
