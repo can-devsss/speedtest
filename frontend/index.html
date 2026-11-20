@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#f7f5f2" id="meta-theme-color" />
+  <meta name="theme-color" content="#f6f4f0" id="meta-theme-color" />
   <title>Speedtest Engine • Zero-Log Telemetry</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=3" />
+  <link rel="stylesheet" href="/css/style.css?v=4" />
 </head>
 <body>
   <div class="ambient-bg" aria-hidden="true">
@@ -264,16 +264,16 @@
           </article>
         </div>
 
-        <!-- Uygulama & Oyun erişim gecikmesi -->
+        <!-- Sosyal Medya & Yayın CDN Erişim Gecikmesi (8 Gerçekçi Edge Düğümü) -->
         <article class="platform-accordion glass-panel" id="platform-accordion">
           <div class="accordion-header">
             <button type="button" class="accordion-toggle detail-title-group" id="platform-toggle" aria-expanded="true" aria-controls="platform-body">
               <span class="icon-chip chip-emerald">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="3.6" y1="9" x2="20.4" y2="9"/><line x1="3.6" y1="15" x2="20.4" y2="15"/><path d="M12 3a14 14 0 0 0 0 18"/><path d="M12 3a14 14 0 0 1 0 18"/></svg>
               </span>
               <span class="accordion-title-wrap title-text">
-                <h3 data-i18n="platformTitle">Apps & Games Ping</h3>
-                <p data-i18n="platformDesc">Personal latency from your own connection</p>
+                <h3 data-i18n="platformTitle">Social & Media CDN Ping</h3>
+                <p data-i18n="platformDesc">Live edge reachability from your device</p>
               </span>
             </button>
 
@@ -291,9 +291,6 @@
           <div class="accordion-body" id="platform-body">
             <div class="accordion-inner">
               <div class="platform-grid" id="platform-grid"></div>
-              <p class="platform-note" data-i18n="platformNote">
-                Browsers cannot send game (UDP) pings. Values are the round-trip time from your connection to each platform's nearest web/CDN endpoint, so in-game ping may differ.
-              </p>
             </div>
           </div>
         </article>
@@ -336,7 +333,7 @@
     </div>
   </aside>
 
-  <script src="/js/gauge.js?v=3"></script>
-  <script src="/js/app.js?v=3"></script>
+  <script src="/js/gauge.js?v=4"></script>
+  <script src="/js/app.js?v=4"></script>
 </body>
 </html>
