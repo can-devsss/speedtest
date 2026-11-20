@@ -6,7 +6,7 @@
   <title>Speedtest Engine • Zero-Log Telemetry</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
@@ -21,7 +21,7 @@
     <header class="top-bar glass-panel">
       <div class="brand-cluster">
         <div class="brand-logo" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 13l4-4" />
             <path d="M3.34 19a10 10 0 1 1 17.32 0" />
           </svg>
@@ -42,18 +42,18 @@
 
         <div class="action-pills">
           <button type="button" class="ctrl-btn" id="history-open-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
             <span data-i18n="historyBtn">HISTORY</span>
             <span class="count-chip" id="history-count">0</span>
           </button>
 
           <button type="button" class="ctrl-btn" id="lang-toggle" title="Language">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
             <span id="lang-label">TR</span>
           </button>
 
           <button type="button" class="ctrl-btn" id="theme-toggle" title="Theme">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
             <span id="theme-label">DARK</span>
           </button>
         </div>
@@ -77,9 +77,9 @@
           <canvas id="speed-gauge"></canvas>
           <div class="gauge-readout">
             <div class="speed-number mono" id="live-speed">0.00</div>
-            <button type="button" class="unit-toggle-btn mono" id="unit-toggle-btn" title="Switch Mbps / MB/s">
+            <button type="button" class="unit-toggle-btn mono" id="unit-toggle-btn" title="Mbps / MB/s">
               <span id="live-unit">Mbps</span>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 10l5-5 5 5"/><path d="M17 14l-5 5-5-5"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 10l5-5 5 5"/><path d="M17 14l-5 5-5-5"/></svg>
             </button>
             <div class="phase-badge" id="test-phase">READY</div>
           </div>
@@ -91,7 +91,7 @@
             <span id="btn-text">Start Test</span>
           </button>
           <button type="button" class="secondary-btn hidden" id="copy-report-btn">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             <span id="copy-text">Copy</span>
           </button>
         </div>
@@ -99,7 +99,7 @@
         <div class="wave-box">
           <div class="wave-header">
             <span class="wave-title">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               <span data-i18n="stabilityLabel">Throughput Stability</span>
             </span>
             <span class="wave-val mono" id="stability-score">--%</span>
@@ -116,7 +116,7 @@
             <div class="metric-head">
               <span class="metric-label" data-i18n="downloadLabel">DOWNLOAD</span>
               <span class="icon-chip chip-emerald">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>
               </span>
             </div>
             <div class="metric-value-row">
@@ -130,7 +130,7 @@
             <div class="metric-head">
               <span class="metric-label" data-i18n="uploadLabel">UPLOAD</span>
               <span class="icon-chip chip-amber">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M5 20h14"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M5 20h14"/></svg>
               </span>
             </div>
             <div class="metric-value-row">
@@ -144,7 +144,7 @@
             <div class="metric-head">
               <span class="metric-label" data-i18n="pingLabel">IDLE PING</span>
               <span class="icon-chip chip-coral">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
               </span>
             </div>
             <div class="metric-value-row">
@@ -158,7 +158,7 @@
             <div class="metric-head">
               <span class="metric-label" data-i18n="jitterLabel">JITTER</span>
               <span class="icon-chip chip-violet">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               </span>
             </div>
             <div class="metric-value-row">
@@ -174,7 +174,7 @@
           <div class="quality-top">
             <div class="quality-info">
               <span class="icon-chip chip-emerald">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               </span>
               <div>
                 <h2 data-i18n="qualityTitle">Line Quality Index</h2>
@@ -206,7 +206,7 @@
             <div class="detail-head">
               <div class="detail-title-group">
                 <span class="icon-chip chip-amber">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg>
                 </span>
                 <div>
                   <h3 data-i18n="bufferbloatTitle">Bufferbloat</h3>
@@ -237,7 +237,7 @@
             <div class="detail-head">
               <div class="detail-title-group">
                 <span class="icon-chip chip-violet">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg>
                 </span>
                 <div>
                   <h3 data-i18n="diagnosticsTitle">Line Telemetry</h3>
