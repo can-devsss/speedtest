@@ -103,16 +103,17 @@ async function measureServerPing(baseUrl, signal) {
   return performance.now() - start;
 }
 
-// GET ile ilk yanıt/başlık gelişine kadar geçen süre (HEAD reddeden uç noktalar için daha kararlı)
+// Mobil tarayıcıda no-cors yönlendirme (301/302) hatalarını önleyen saf RTT ölçümü
 async function measureEdgeRtt(url, signal) {
+  const sep = url.includes("?") ? "&" : "?";
+  const target = `${url}${sep}t=${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const start = performance.now();
   await timedFetch(
-    url,
+    target,
     {
       method: "GET",
       mode: "no-cors",
       cache: "no-store",
-      redirect: "manual",
       credentials: "omit",
       referrerPolicy: "no-referrer"
     },
@@ -470,10 +471,9 @@ async function measurePlatform(item, signal) {
       if (isAbort(err)) return null;
       if (err.name === "TimeoutError") timeouts++;
       else blocked++;
-      // Mobil bağlantıda tek seferlik takılmaya hemen pes etme; 3 başarısız denemeden sonra vazgeç
       if (blocked + timeouts >= 3 && samples.length === 0) break;
     }
-    await sleep(40);
+    await sleep(45);
   }
 
   if (!samples.length) return timeouts > blocked ? -2 : -1;
