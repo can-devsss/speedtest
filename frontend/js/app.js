@@ -5,6 +5,10 @@ let networkMetadata = null;
 let lastReportData = null;
 let currentLang = localStorage.getItem("speedtest_lang") || "en";
 let currentPhaseKey = "ready";
+let displayUnit = "Mbps"; // "Mbps" veya "MB/s"
+let rawLiveMbps = 0;
+let rawDlMbps = null;
+let rawUlMbps = null;
 
 const I18N = {
   en: {
@@ -28,6 +32,9 @@ const I18N = {
     qualityGradeUltra: "Ultra-Low Latency • Ideal for 4K Streaming & Competitive Gaming",
     qualityGradeGood: "Balanced Line • Smooth Video Calls & Fast Downloads",
     qualityGradeFair: "Moderate Congestion • Noticeable Load Latency",
+    scStream: "4K Stream",
+    scGame: "Gaming",
+    scCall: "Video Call",
     bufferbloatTitle: "Bufferbloat",
     bufferbloatDesc: "Latency inflation under load",
     unloadedLabel: "Unloaded (Idle)",
@@ -37,7 +44,7 @@ const I18N = {
     diagnosticsDesc: "Response & routing metadata",
     telemetryTag: "REAL-TIME",
     ttfbLabel: "First Byte (TTFB)",
-    protocolLabel: "Protocol / IP",
+    serverNodeLabel: "Test Node",
     asnLabel: "Network ASN",
     historyTitle: "Test History",
     historySub: "Stored locally on this device",
@@ -87,6 +94,9 @@ const I18N = {
     qualityGradeUltra: "Ultra Düşük Gecikme • 4K Yayın ve Rekabetçi Oyunlar İçin İdeal",
     qualityGradeGood: "Dengeli Hat • Akıcı Görüntülü Görüşme ve Hızlı İndirme",
     qualityGradeFair: "Orta Düzey Yük • Tam Kapasitede Gecikme Artışı Mevcut",
+    scStream: "4K Yayın",
+    scGame: "Oyun",
+    scCall: "Görüntülü Görüşme",
     bufferbloatTitle: "Bufferbloat",
     bufferbloatDesc: "Tam yük altında gecikme artışı",
     unloadedLabel: "Boşta Gecikme",
@@ -96,7 +106,7 @@ const I18N = {
     diagnosticsDesc: "Yanıt süresi ve yönlendirme",
     telemetryTag: "CANLI VERİ",
     ttfbLabel: "İlk Bayt Süresi (TTFB)",
-    protocolLabel: "Protokol / IP",
+    serverNodeLabel: "Test Sunucusu",
     asnLabel: "Ağ ASN Numarası",
     historyTitle: "Ölçüm Geçmişi",
     historySub: "Yalnızca bu cihazda saklanır",
@@ -128,10 +138,13 @@ const I18N = {
 };
 
 const els = {
+  gaugeCard: document.getElementById("gauge-card"),
   startBtn: document.getElementById("start-btn"),
+  btnIcon: document.getElementById("btn-icon"),
   btnText: document.getElementById("btn-text"),
   copyReportBtn: document.getElementById("copy-report-btn"),
   copyText: document.getElementById("copy-text"),
+  unitToggleBtn: document.getElementById("unit-toggle-btn"),
   langToggle: document.getElementById("lang-toggle"),
   langLabel: document.getElementById("lang-label"),
   themeToggle: document.getElementById("theme-toggle"),
@@ -151,8 +164,10 @@ const els = {
   cardUpload: document.getElementById("card-upload"),
   cardPing: document.getElementById("card-ping"),
   resDownload: document.getElementById("res-download"),
+  resDownloadUnit: document.getElementById("res-download-unit"),
   resDownloadMb: document.getElementById("res-download-mb"),
   resUpload: document.getElementById("res-upload"),
+  resUploadUnit: document.getElementById("res-upload-unit"),
   resUploadMb: document.getElementById("res-upload-mb"),
   resPing: document.getElementById("res-ping"),
   resMinMaxPing: document.getElementById("res-min-max-ping"),
@@ -161,12 +176,14 @@ const els = {
   qualityScore: document.getElementById("quality-score"),
   qualityVerdict: document.getElementById("quality-verdict"),
   qualityFill: document.getElementById("quality-fill"),
+  scStream: document.getElementById("sc-stream"),
+  scGame: document.getElementById("sc-game"),
+  scCall: document.getElementById("sc-call"),
   bloatGrade: document.getElementById("bufferbloat-grade"),
   bloatIdle: document.getElementById("bloat-idle"),
   bloatDl: document.getElementById("bloat-dl"),
   bloatUl: document.getElementById("bloat-ul"),
   diagTtfb: document.getElementById("diag-ttfb"),
-  diagProto: document.getElementById("diag-proto"),
   diagAsn: document.getElementById("diag-asn"),
   historyBody: document.getElementById("history-body"),
   clearHistoryBtn: document.getElementById("clear-history-btn")
@@ -181,6 +198,7 @@ function updatePhaseVisuals(phaseKey) {
   els.cardUpload.classList.remove("card-active-amber");
   els.cardPing.classList.remove("card-active-coral");
   els.testPhase.classList.remove("phase-upload", "phase-ping");
+  els.gaugeCard.classList.remove("phase-glow-emerald", "phase-glow-amber", "phase-glow-coral");
 
   const steps = document.querySelectorAll(".step-pill");
   steps.forEach((s) => s.classList.remove("active-step", "done-step"));
@@ -188,14 +206,17 @@ function updatePhaseVisuals(phaseKey) {
   if (phaseKey === "ping") {
     els.cardPing.classList.add("card-active-coral");
     els.testPhase.classList.add("phase-ping");
+    els.gaugeCard.classList.add("phase-glow-coral");
     document.querySelector('[data-step="ping"]')?.classList.add("active-step");
   } else if (phaseKey === "download") {
     els.cardDownload.classList.add("card-active-emerald");
+    els.gaugeCard.classList.add("phase-glow-emerald");
     document.querySelector('[data-step="ping"]')?.classList.add("done-step");
     document.querySelector('[data-step="download"]')?.classList.add("active-step");
   } else if (phaseKey === "upload") {
     els.cardUpload.classList.add("card-active-amber");
     els.testPhase.classList.add("phase-upload");
+    els.gaugeCard.classList.add("phase-glow-amber");
     document.querySelector('[data-step="ping"]')?.classList.add("done-step");
     document.querySelector('[data-step="download"]')?.classList.add("done-step");
     document.querySelector('[data-step="upload"]')?.classList.add("active-step");
@@ -221,6 +242,41 @@ function setPhase(phaseKey) {
   els.testPhase.textContent = t(map[phaseKey] || "phaseReady");
 }
 
+function renderSpeedValues() {
+  if (displayUnit === "MB/s") {
+    els.liveSpeed.textContent = (rawLiveMbps / 8).toFixed(2);
+    els.liveUnit.textContent = "MB/s";
+    if (rawDlMbps !== null) {
+      els.resDownload.textContent = (rawDlMbps / 8).toFixed(2);
+      els.resDownloadUnit.textContent = "MB/s";
+      els.resDownloadMb.textContent = `${rawDlMbps.toFixed(1)} Mbps`;
+    }
+    if (rawUlMbps !== null) {
+      els.resUpload.textContent = (rawUlMbps / 8).toFixed(2);
+      els.resUploadUnit.textContent = "MB/s";
+      els.resUploadMb.textContent = `${rawUlMbps.toFixed(1)} Mbps`;
+    }
+  } else {
+    els.liveSpeed.textContent = rawLiveMbps.toFixed(2);
+    els.liveUnit.textContent = "Mbps";
+    if (rawDlMbps !== null) {
+      els.resDownload.textContent = rawDlMbps.toFixed(1);
+      els.resDownloadUnit.textContent = "Mbps";
+      els.resDownloadMb.textContent = `${(rawDlMbps / 8).toFixed(2)} MB/s`;
+    }
+    if (rawUlMbps !== null) {
+      els.resUpload.textContent = rawUlMbps.toFixed(1);
+      els.resUploadUnit.textContent = "Mbps";
+      els.resUploadMb.textContent = `${(rawUlMbps / 8).toFixed(2)} MB/s`;
+    }
+  }
+}
+
+els.unitToggleBtn.addEventListener("click", () => {
+  displayUnit = displayUnit === "Mbps" ? "MB/s" : "Mbps";
+  renderSpeedValues();
+});
+
 function renderNetworkLabel() {
   if (!networkMetadata) {
     els.ispName.textContent = t("detectingNet");
@@ -244,7 +300,6 @@ function renderMinMaxLabel(minVal, maxVal) {
 function applyLanguage() {
   document.documentElement.lang = currentLang;
   els.langLabel.textContent = currentLang === "en" ? "TR" : "EN";
-
   visuals.setAutoLabel(t("autoScale"));
 
   document.querySelectorAll("[data-i18n]").forEach((node) => {
@@ -313,18 +368,10 @@ async function fetchNetworkInfo() {
     networkMetadata = await res.json();
     renderNetworkLabel();
     els.ipInfo.textContent = `${networkMetadata.ip_version} • ${networkMetadata.ip_masked}`;
-    els.diagProto.textContent = `${networkMetadata.ip_version} / HTTP`;
     els.diagAsn.textContent = networkMetadata.asn;
   } catch {
     els.ispName.textContent = t("netUnavailable");
   }
-}
-
-function formatSpeedReadout(mbps) {
-  if (mbps >= 10000) {
-    return { val: (mbps / 1000).toFixed(2), unit: "Gbps" };
-  }
-  return { val: mbps.toFixed(2), unit: "Mbps" };
 }
 
 function calculateStability(samples) {
@@ -335,7 +382,7 @@ function calculateStability(samples) {
     samples.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / samples.length;
   const stdDev = Math.sqrt(variance);
   const cv = stdDev / mean;
-  return Math.max(10, Math.min(99, Math.round((1 - cv) * 100)));
+  return Math.max(12, Math.min(99, Math.round((1 - cv) * 100)));
 }
 
 function evaluateBufferbloat(idlePing, dlPing, ulPing) {
@@ -349,8 +396,8 @@ function evaluateBufferbloat(idlePing, dlPing, ulPing) {
 
 function computeQualityScore(dl, ping, jitter, bloatPenalty) {
   let score = 100 - bloatPenalty;
-  if (ping > 80) score -= 18;
-  else if (ping > 45) score -= 8;
+  if (ping > 85) score -= 16;
+  else if (ping > 45) score -= 7;
   if (jitter > 15) score -= 12;
   else if (jitter > 6) score -= 5;
   if (dl < 25) score -= 12;
@@ -361,6 +408,14 @@ function computeQualityScore(dl, ping, jitter, bloatPenalty) {
   else if (score < 88) verdictKey = "qualityGradeGood";
 
   return { score, verdictKey };
+}
+
+function updateScenarioChips(dl, ul, ping, jitter) {
+  [els.scStream, els.scGame, els.scCall].forEach((c) => c.classList.remove("sc-ok", "sc-warn"));
+
+  els.scStream.classList.add(dl >= 25 ? "sc-ok" : "sc-warn");
+  els.scGame.classList.add(ping <= 85 && jitter <= 12 ? "sc-ok" : "sc-warn");
+  els.scCall.classList.add(dl >= 10 && ul >= 5 && jitter <= 20 ? "sc-ok" : "sc-warn");
 }
 
 function saveToLocalHistory(entry) {
@@ -402,16 +457,20 @@ function startTest() {
   }
 
   isRunning = true;
+  rawLiveMbps = 0;
   visuals.reset();
+  renderSpeedValues();
+
   els.copyReportBtn.classList.add("hidden");
   els.startBtn.classList.add("btn-running");
+  els.btnIcon.textContent = "■";
   els.btnText.textContent = t("stopBtn");
-  els.liveSpeed.textContent = "0.00";
-  els.liveUnit.textContent = "Mbps";
+
   els.bloatGrade.className = "grade-badge";
   els.bloatGrade.textContent = "-";
   els.qualityScore.textContent = "--";
   els.qualityFill.style.width = "0%";
+  [els.scStream, els.scGame, els.scCall].forEach((c) => c.classList.remove("sc-ok", "sc-warn"));
 
   worker = new Worker("/js/worker.js");
 
@@ -431,15 +490,15 @@ function startTest() {
       renderMinMaxLabel(minV, maxV);
       els.resJitter.textContent = msg.stats.jitter.toFixed(1);
     } else if (msg.type === "SPEED_TICK") {
-      const formatted = formatSpeedReadout(msg.mbps);
-      els.liveSpeed.textContent = formatted.val;
-      els.liveUnit.textContent = formatted.unit;
+      rawLiveMbps = msg.mbps;
+      renderSpeedValues();
       visuals.setTarget(msg.mbps, msg.mode);
     } else if (msg.type === "COMPLETE") {
       finalizeResults(msg.results);
     } else if (msg.type === "ERROR") {
       visuals.reset();
-      els.liveSpeed.textContent = "0.00";
+      rawLiveMbps = 0;
+      renderSpeedValues();
       setPhase(msg.code === "RATE_LIMIT" ? "rateLimit" : "error");
       resetUIState(false);
     }
@@ -459,17 +518,13 @@ function finalizeResults(res) {
   const loss = res.ping.packetLoss;
   const ttfb = res.download.ttfb || ping;
 
-  const formattedDl = formatSpeedReadout(dl);
-  els.liveSpeed.textContent = formattedDl.val;
-  els.liveUnit.textContent = formattedDl.unit;
+  rawLiveMbps = dl;
+  rawDlMbps = dl;
+  rawUlMbps = ul;
+  renderSpeedValues();
+
   visuals.setTarget(dl, "DOWNLOAD");
   setPhase("completed");
-
-  els.resDownload.textContent = dl.toFixed(1);
-  els.resDownloadMb.textContent = `${(dl / 8).toFixed(2)} MB/s`;
-
-  els.resUpload.textContent = ul.toFixed(1);
-  els.resUploadMb.textContent = `${(ul / 8).toFixed(2)} MB/s`;
 
   els.resPing.textContent = ping.toFixed(1);
   els.resJitter.textContent = jitter.toFixed(1);
@@ -495,6 +550,8 @@ function finalizeResults(res) {
   els.qualityFill.style.width = `${quality.score}%`;
   els.qualityVerdict.dataset.verdictKey = quality.verdictKey;
   els.qualityVerdict.textContent = t(quality.verdictKey);
+
+  updateScenarioChips(dl, ul, ping, jitter);
 
   const stability = calculateStability(res.download.samples);
   els.stabilityScore.textContent = `${stability}%`;
@@ -530,6 +587,7 @@ function finalizeResults(res) {
 function resetUIState(completed = false) {
   isRunning = false;
   els.startBtn.classList.remove("btn-running");
+  els.btnIcon.textContent = "▶";
   els.btnText.textContent = completed ? t("againBtn") : t("startBtn");
   if (worker) {
     worker.terminate();
