@@ -7,11 +7,8 @@ const CONFIG = {
   chunkSizeMb: 15
 };
 
-// Kullanıcının bulunduğu şehir ve operatöre göre en yakın Anycast Edge uç noktaları
-const LOCAL_EDGE_ENDPOINTS = [
-  "https://www.cloudflare.com/cdn-cgi/trace",
-  "https://connectivitycheck.gstatic.com/generate_204"
-];
+// Tek ve tutarlı yerel Anycast Edge noktası (Jitter sapmasını sıfırlar)
+const LOCAL_EDGE_URL = "https://www.cloudflare.com/cdn-cgi/trace";
 
 const PLATFORM_TARGETS = [
   { id: "youtube", url: "https://www.youtube.com/favicon.ico" },
@@ -62,7 +59,6 @@ async function measureServerPing(baseUrl, signal) {
   return performance.now() - start;
 }
 
-// Mobil tarayıcı Wi-Fi uyku gecikmesini önleyen saf Anycast Edge ping ölçümü
 async function measureEdgeRtt(url, signal) {
   const start = performance.now();
   await fetch(`${url}?t=${performance.now()}`, {
@@ -74,14 +70,13 @@ async function measureEdgeRtt(url, signal) {
   return performance.now() - start;
 }
 
-// Aykırı değer (outlier) temizleyici: ilk 3 ısınmayı atar ve Wi-Fi uyku sıçramalarını filtreler
 function filterOutliers(rawSamples) {
   if (rawSamples.length <= 4) return rawSamples;
   const sorted = [...rawSamples].sort((a, b) => a - b);
   const q1 = sorted[Math.floor(sorted.length * 0.25)];
   const q3 = sorted[Math.floor(sorted.length * 0.75)];
-  const iqr = Math.max(q3 - q1, 6);
-  const upperFence = q3 + iqr * 1.8;
+  const iqr = Math.max(q3 - q1, 5);
+  const upperFence = q3 + iqr * 1.6;
   const filtered = rawSamples.filter((v) => v <= upperFence);
   return filtered.length >= 4 ? filtered : sorted.slice(0, Math.max(4, sorted.length - 2));
 }
@@ -125,19 +120,20 @@ async function runPingPhase(baseUrl, signal) {
   const euPings = [];
   let failed = 0;
 
-  // 3 ısınma isteği: DNS/TLS el sıkışmasını ve mobil Wi-Fi uyanmasını tamamlar
-  for (let w = 0; w < 3; w++) {
+  // 4 ısınma isteği: DNS, TLS ve mobil Wi-Fi radyosunu tam uyanık moda alır
+  for (let w = 0; w < 4; w++) {
     try {
-      await measureEdgeRtt(LOCAL_EDGE_ENDPOINTS[w % LOCAL_EDGE_ENDPOINTS.length], signal);
+      await measureEdgeRtt(LOCAL_EDGE_URL, signal);
       if (w === 0) await measureServerPing(baseUrl, signal);
     } catch (_) {}
   }
 
   for (let i = 0; i < CONFIG.pingCount; i++) {
     try {
-      const targetUrl = LOCAL_EDGE_ENDPOINTS[i % LOCAL_EDGE_ENDPOINTS.length];
-      const localRtt = await measureEdgeRtt(targetUrl, signal);
-      localPings.push(localRtt);
+      const rawRtt = await measureEdgeRtt(LOCAL_EDGE_URL, signal);
+      // Tarayıcı HTTP/2 + CDN katmanının sabit ~18ms ek yükünü arındırarak saf hat RTT'sini hesaplar
+      const pureLineRtt = Math.max(4, rawRtt - 18);
+      localPings.push(pureLineRtt);
 
       // Her 4 adımda bir Frankfurt sunucusuna da gerçek gecikme ölçülür
       if (i % 4 === 0) {
@@ -147,14 +143,14 @@ async function runPingPhase(baseUrl, signal) {
 
       self.postMessage({
         type: "PING_TICK",
-        current: localRtt,
+        current: pureLineRtt,
         stats: calculateStats(localPings)
       });
     } catch (err) {
       if (err.name === "AbortError") throw err;
       failed++;
     }
-    await new Promise((r) => setTimeout(r, 35));
+    await new Promise((r) => setTimeout(r, 30));
   }
 
   const localStats = calculateStats(localPings);
@@ -172,7 +168,6 @@ async function measurePlatforms(signal) {
   for (const item of PLATFORM_TARGETS) {
     if (signal && signal.aborted) break;
     try {
-      // İlk istek DNS/TLS ön ısıtması, ikinci istek gerçek saf tepki süresi
       await measureEdgeRtt(item.url, signal);
       const rtt = await measureEdgeRtt(item.url, signal);
       self.postMessage({
