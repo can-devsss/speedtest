@@ -1,9 +1,9 @@
 :root {
   --bg-base: #f7f5f2;
-  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-bg: rgba(255, 255, 255, 0.84);
   --glass-border: rgba(255, 255, 255, 0.96);
   --glass-shadow: 0 18px 42px -14px rgba(24, 21, 18, 0.08), 0 2px 6px rgba(24, 21, 18, 0.04);
-  --surface-sub: rgba(243, 240, 235, 0.88);
+  --surface-sub: rgba(243, 240, 235, 0.9);
   --text-primary: #121110;
   --text-secondary: #534f4a;
   --text-muted: #847e77;
@@ -27,10 +27,10 @@
 
 body.dark-theme {
   --bg-base: #09090b;
-  --glass-bg: rgba(22, 22, 25, 0.84);
+  --glass-bg: rgba(22, 22, 25, 0.86);
   --glass-border: rgba(255, 255, 255, 0.09);
   --glass-shadow: 0 22px 50px -12px rgba(0, 0, 0, 0.7);
-  --surface-sub: rgba(34, 34, 38, 0.85);
+  --surface-sub: rgba(34, 34, 38, 0.88);
   --text-primary: #fafafa;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
@@ -53,6 +53,8 @@ body.dark-theme {
 }
 
 html, body {
+  width: 100%;
+  max-width: 100%;
   min-height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif;
   background-color: var(--bg-base);
@@ -68,7 +70,7 @@ html, body {
   font-feature-settings: "tnum" 1, "cv05" 1;
 }
 
-/* Sıcak Şampanya/Turuncu + Zümrüt İpek Arka Plan Ambiyansı */
+/* Arka Plan Ambiyansı */
 .ambient-bg {
   position: fixed;
   inset: 0;
@@ -115,6 +117,8 @@ body.dark-theme .orb {
 
 /* iOS Cam Yüzey */
 .glass-panel {
+  min-width: 0;
+  max-width: 100%;
   background: var(--glass-bg);
   backdrop-filter: blur(28px) saturate(190%);
   -webkit-backdrop-filter: blur(28px) saturate(190%);
@@ -132,6 +136,7 @@ body.dark-theme .glass-panel {
 .cockpit-shell {
   position: relative;
   z-index: 1;
+  width: 100%;
   max-width: 1260px;
   min-height: 100vh;
   margin: 0 auto;
@@ -157,6 +162,7 @@ body.dark-theme .glass-panel {
   display: flex;
   align-items: center;
   gap: 11px;
+  min-width: 0;
 }
 
 .brand-logo {
@@ -173,23 +179,26 @@ body.dark-theme .glass-panel {
 .brand-titles {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
+  min-width: 0;
 }
 
 .brand-titles h1 {
-  font-size: 1.16rem;
+  font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.032em;
+  white-space: nowrap;
 }
 
 .badge-pill {
-  font-size: 0.67rem;
+  font-size: 0.66rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   padding: 4px 10px;
   border-radius: 999px;
   text-transform: uppercase;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .badge-emerald {
@@ -207,18 +216,20 @@ body.dark-theme .glass-panel {
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+  min-width: 0;
 }
 
 .net-pill {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 15px;
+  padding: 8px 14px;
   border-radius: 999px;
   background: var(--surface-sub);
   border: 1px solid var(--divider);
-  font-size: 0.8rem;
+  font-size: 0.79rem;
   font-weight: 700;
+  min-width: 0;
   max-width: 100%;
 }
 
@@ -226,7 +237,7 @@ body.dark-theme .glass-panel {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 220px;
+  min-width: 0;
 }
 
 .pulse-dot {
@@ -240,13 +251,15 @@ body.dark-theme .glass-panel {
 
 .net-sep {
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .net-ip {
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 600;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .action-pills {
@@ -258,6 +271,7 @@ body.dark-theme .glass-panel {
 .ctrl-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   height: 36px;
   padding: 0 13px;
@@ -295,9 +309,10 @@ body.dark-theme .glass-panel {
 /* Bento Grid */
 .bento-grid {
   display: grid;
-  grid-template-columns: 365px 1fr;
+  grid-template-columns: 365px minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
+  width: 100%;
 }
 
 /* Sol Kadran Kartı */
@@ -307,6 +322,7 @@ body.dark-theme .glass-panel {
   flex-direction: column;
   justify-content: space-between;
   gap: 14px;
+  min-width: 0;
 }
 
 .gauge-card.phase-glow-emerald {
@@ -368,7 +384,6 @@ body.dark-theme .glass-panel {
   white-space: nowrap;
 }
 
-/* Ferahlatılmış İbre Sahnesi (Üst Üste Binme Sıfır) */
 .gauge-stage {
   position: relative;
   width: 100%;
@@ -394,7 +409,6 @@ body.dark-theme .glass-panel {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  pointer-events: auto;
 }
 
 .speed-number {
@@ -522,6 +536,7 @@ body.dark-theme .glass-panel {
   border: 1px solid var(--divider);
   border-radius: 18px;
   padding: 12px 14px 8px;
+  min-width: 0;
 }
 
 .wave-header {
@@ -558,11 +573,12 @@ body.dark-theme .glass-panel {
   flex-direction: column;
   justify-content: space-between;
   gap: 16px;
+  min-width: 0;
 }
 
 .metrics-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -603,6 +619,8 @@ body.dark-theme .glass-panel {
   letter-spacing: 0.04em;
   color: var(--text-secondary);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .icon-chip {
@@ -637,7 +655,8 @@ body.dark-theme .glass-panel {
 .metric-value-row {
   display: flex;
   align-items: baseline;
-  gap: 5px;
+  gap: 4px;
+  min-width: 0;
 }
 
 .metric-val {
@@ -648,7 +667,7 @@ body.dark-theme .glass-panel {
 }
 
 .metric-unit {
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   font-weight: 700;
   color: var(--text-secondary);
 }
@@ -662,19 +681,20 @@ body.dark-theme .glass-panel {
   text-overflow: ellipsis;
 }
 
-/* Hat Kalite Endeksi (2 Katmanlı — Çarpışma Sıfır) */
+/* Hat Kalite Endeksi */
 .quality-card {
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
 }
 
 .quality-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
 }
 
 .quality-info {
@@ -699,6 +719,7 @@ body.dark-theme .glass-panel {
   font-weight: 600;
   color: var(--text-secondary);
   margin-top: 2px;
+  line-height: 1.35;
 }
 
 .score-pill {
@@ -721,13 +742,14 @@ body.dark-theme .glass-panel {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .scenario-chips {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
-  flex-shrink: 0;
 }
 
 .sc-chip {
@@ -774,7 +796,7 @@ body.dark-theme .glass-panel {
 /* Alt İkili Kartlar */
 .bottom-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -783,6 +805,7 @@ body.dark-theme .glass-panel {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
 }
 
 .detail-head {
@@ -796,6 +819,7 @@ body.dark-theme .glass-panel {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .detail-title-group h3 {
@@ -860,6 +884,13 @@ body.dark-theme .glass-panel {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
+  min-width: 0;
+}
+
+.stat-row span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stat-row strong {
@@ -867,6 +898,7 @@ body.dark-theme .glass-panel {
   font-size: 0.84rem;
   font-weight: 700;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Alt Bilgi */
@@ -876,6 +908,7 @@ body.dark-theme .glass-panel {
   font-weight: 600;
   color: var(--text-muted);
   padding-top: 2px;
+  line-height: 1.45;
 }
 
 /* Geçmiş Çekmecesi */
@@ -1002,89 +1035,135 @@ body.dark-theme .glass-panel {
 /* Tablet ve Mobil Optimizasyonu */
 @media (max-width: 1080px) {
   .bento-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .metrics-row {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 680px) {
   .cockpit-shell {
-    padding: 12px 12px 26px;
-    gap: 12px;
+    padding: 10px 10px 24px;
+    gap: 10px;
     justify-content: flex-start;
   }
 
   .top-bar {
     flex-direction: column;
     align-items: stretch;
-    padding: 13px 14px;
+    padding: 12px;
     gap: 10px;
+    border-radius: 20px;
   }
 
   .brand-cluster {
     justify-content: space-between;
+    width: 100%;
+  }
+
+  .brand-titles {
+    flex: 1;
+    justify-content: space-between;
+  }
+
+  .brand-titles h1 {
+    font-size: 1.05rem;
   }
 
   .header-controls {
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
+    width: 100%;
   }
 
   .net-pill {
     justify-content: center;
-    font-size: 0.76rem;
+    font-size: 0.74rem;
     padding: 8px 10px;
+    width: 100%;
   }
 
   .net-isp {
-    max-width: 170px;
+    max-width: 48%;
   }
 
   .action-pills {
     display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 8px;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    width: 100%;
   }
 
   .ctrl-btn {
     justify-content: center;
     height: 38px;
+    padding: 0 8px;
+    font-size: 0.72rem;
+    width: 100%;
   }
 
   .gauge-card {
-    padding: 16px;
+    padding: 15px;
+    border-radius: 22px;
+  }
+
+  .step-pill {
+    padding: 4px 8px;
+    font-size: 0.63rem;
   }
 
   .gauge-stage {
-    height: 224px;
+    height: 220px;
   }
 
   #speed-gauge {
-    width: 242px;
-    height: 214px;
+    width: 238px;
+    height: 210px;
   }
 
   .speed-number {
-    font-size: 2.7rem;
+    font-size: 2.55rem;
   }
 
   .metrics-row {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
   }
 
   .metric-card {
-    padding: 15px;
-    gap: 10px;
-    border-radius: 20px;
+    padding: 14px 13px;
+    gap: 8px;
+    border-radius: 18px;
+  }
+
+  .metric-label {
+    font-size: 0.67rem;
+  }
+
+  .icon-chip {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
   }
 
   .metric-val {
-    font-size: 1.65rem;
+    font-size: 1.48rem;
+  }
+
+  .metric-unit {
+    font-size: 0.76rem;
+  }
+
+  .metric-sub {
+    font-size: 0.7rem;
+  }
+
+  .quality-card {
+    padding: 15px;
+    border-radius: 20px;
   }
 
   .quality-bottom-meta {
@@ -1094,7 +1173,17 @@ body.dark-theme .glass-panel {
   }
 
   .scenario-chips {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .sc-chip {
+    text-align: center;
+    padding: 6px 4px;
+    font-size: 0.66rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .quality-bar-track {
@@ -1103,12 +1192,21 @@ body.dark-theme .glass-panel {
   }
 
   .bottom-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
   }
 
   .detail-card {
-    padding: 16px;
+    padding: 15px;
     border-radius: 20px;
+  }
+
+  .stat-row {
+    padding: 9px 11px;
+    font-size: 0.76rem;
+  }
+
+  .stat-row strong {
+    font-size: 0.78rem;
   }
 }
