@@ -7,6 +7,25 @@ const CONFIG = {
   chunkSizeMb: 15
 };
 
+// Kullanıcının bulunduğu şehir ve operatöre göre en yakın Anycast Edge uç noktaları
+const LOCAL_EDGE_ENDPOINTS = [
+  "https://www.cloudflare.com/cdn-cgi/trace",
+  "https://connectivitycheck.gstatic.com/generate_204"
+];
+
+const PLATFORM_TARGETS = [
+  { id: "youtube", url: "https://www.youtube.com/favicon.ico" },
+  { id: "instagram", url: "https://www.instagram.com/favicon.ico" },
+  { id: "tiktok", url: "https://www.tiktok.com/favicon.ico" },
+  { id: "x", url: "https://abs.twimg.com/favicons/twitter.3.ico" },
+  { id: "whatsapp", url: "https://static.whatsapp.net/rsrc.php/v3/yz/r/ujTY9i_Jhs1.png" },
+  { id: "telegram", url: "https://telegram.org/favicon.ico" },
+  { id: "steam", url: "https://store.steampowered.com/favicon.ico" },
+  { id: "discord", url: "https://discord.com/assets/f9bb9c4af2b9c32a2c5ee0014661546d.png" },
+  { id: "twitch", url: "https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png" },
+  { id: "spotify", url: "https://open.spotifycdn.com/cdn/images/favicon32.b64ecc03.png" }
+];
+
 let abortController = null;
 
 self.onmessage = async (e) => {
@@ -23,12 +42,15 @@ self.onmessage = async (e) => {
         });
       }
     }
+  } else if (e.data.command === "PING_PLATFORMS") {
+    const controller = new AbortController();
+    await measurePlatforms(controller.signal);
   } else if (e.data.command === "STOP") {
     if (abortController) abortController.abort();
   }
 };
 
-async function measureSinglePing(baseUrl, signal) {
+async function measureServerPing(baseUrl, signal) {
   const start = performance.now();
   const res = await fetch(`${baseUrl}/api/ping?r=${Math.random()}`, {
     method: "GET",
@@ -40,8 +62,33 @@ async function measureSinglePing(baseUrl, signal) {
   return performance.now() - start;
 }
 
-function calculateStats(samples) {
-  if (!samples.length) return { avg: 0, min: 0, max: 0, jitter: 0 };
+// Mobil tarayıcı Wi-Fi uyku gecikmesini önleyen saf Anycast Edge ping ölçümü
+async function measureEdgeRtt(url, signal) {
+  const start = performance.now();
+  await fetch(`${url}?t=${performance.now()}`, {
+    method: "HEAD",
+    mode: "no-cors",
+    cache: "no-store",
+    signal
+  });
+  return performance.now() - start;
+}
+
+// Aykırı değer (outlier) temizleyici: ilk 3 ısınmayı atar ve Wi-Fi uyku sıçramalarını filtreler
+function filterOutliers(rawSamples) {
+  if (rawSamples.length <= 4) return rawSamples;
+  const sorted = [...rawSamples].sort((a, b) => a - b);
+  const q1 = sorted[Math.floor(sorted.length * 0.25)];
+  const q3 = sorted[Math.floor(sorted.length * 0.75)];
+  const iqr = Math.max(q3 - q1, 6);
+  const upperFence = q3 + iqr * 1.8;
+  const filtered = rawSamples.filter((v) => v <= upperFence);
+  return filtered.length >= 4 ? filtered : sorted.slice(0, Math.max(4, sorted.length - 2));
+}
+
+function calculateStats(rawSamples) {
+  if (!rawSamples.length) return { avg: 0, min: 0, max: 0, jitter: 0 };
+  const samples = filterOutliers(rawSamples);
   const min = Math.min(...samples);
   const max = Math.max(...samples);
   const avg = samples.reduce((a, b) => a + b, 0) / samples.length;
@@ -55,13 +102,12 @@ function calculateStats(samples) {
   return { avg, min, max, jitter };
 }
 
-// Çakışmasız sıralı Bufferbloat ping döngüsü
 function startBloatMonitor(baseUrl, signal, targetArray) {
   let active = true;
   const loop = async () => {
     while (active && !signal.aborted) {
       try {
-        const rtt = await measureSinglePing(baseUrl, signal);
+        const rtt = await measureServerPing(baseUrl, signal);
         targetArray.push(rtt);
       } catch (_) {}
       await new Promise((r) => setTimeout(r, 420));
@@ -75,33 +121,74 @@ function startBloatMonitor(baseUrl, signal, targetArray) {
 
 async function runPingPhase(baseUrl, signal) {
   self.postMessage({ type: "PHASE", phase: "PING" });
-  const pings = [];
+  const localPings = [];
+  const euPings = [];
   let failed = 0;
 
-  // İlk istek DNS/TLS el sıkışması olduğu için ısınma olarak atılır
-  try {
-    await measureSinglePing(baseUrl, signal);
-  } catch (_) {}
+  // 3 ısınma isteği: DNS/TLS el sıkışmasını ve mobil Wi-Fi uyanmasını tamamlar
+  for (let w = 0; w < 3; w++) {
+    try {
+      await measureEdgeRtt(LOCAL_EDGE_ENDPOINTS[w % LOCAL_EDGE_ENDPOINTS.length], signal);
+      if (w === 0) await measureServerPing(baseUrl, signal);
+    } catch (_) {}
+  }
 
   for (let i = 0; i < CONFIG.pingCount; i++) {
     try {
-      const rtt = await measureSinglePing(baseUrl, signal);
-      pings.push(rtt);
+      const targetUrl = LOCAL_EDGE_ENDPOINTS[i % LOCAL_EDGE_ENDPOINTS.length];
+      const localRtt = await measureEdgeRtt(targetUrl, signal);
+      localPings.push(localRtt);
+
+      // Her 4 adımda bir Frankfurt sunucusuna da gerçek gecikme ölçülür
+      if (i % 4 === 0) {
+        const euRtt = await measureServerPing(baseUrl, signal);
+        euPings.push(euRtt);
+      }
+
       self.postMessage({
         type: "PING_TICK",
-        current: rtt,
-        stats: calculateStats(pings)
+        current: localRtt,
+        stats: calculateStats(localPings)
       });
     } catch (err) {
       if (err.name === "AbortError") throw err;
       failed++;
     }
-    await new Promise((r) => setTimeout(r, 45));
+    await new Promise((r) => setTimeout(r, 35));
   }
 
-  const stats = calculateStats(pings);
+  const localStats = calculateStats(localPings);
+  const euStats = calculateStats(euPings);
   const packetLoss = (failed / CONFIG.pingCount) * 100;
-  return { ...stats, packetLoss };
+
+  return {
+    ...localStats,
+    euAvg: euStats.avg || localStats.avg,
+    packetLoss
+  };
+}
+
+async function measurePlatforms(signal) {
+  for (const item of PLATFORM_TARGETS) {
+    if (signal && signal.aborted) break;
+    try {
+      // İlk istek DNS/TLS ön ısıtması, ikinci istek gerçek saf tepki süresi
+      await measureEdgeRtt(item.url, signal);
+      const rtt = await measureEdgeRtt(item.url, signal);
+      self.postMessage({
+        type: "PLATFORM_TICK",
+        id: item.id,
+        ms: Math.round(rtt)
+      });
+    } catch (_) {
+      self.postMessage({
+        type: "PLATFORM_TICK",
+        id: item.id,
+        ms: -1
+      });
+    }
+  }
+  self.postMessage({ type: "PLATFORMS_DONE" });
 }
 
 async function runDownloadPhase(baseUrl, signal) {
@@ -190,7 +277,7 @@ async function runDownloadPhase(baseUrl, signal) {
   );
   const finalMbps = (validBytes * 8) / (effectiveSec * 1_000_000);
   const loadedPingAvg = loadedPings.length
-    ? loadedPings.reduce((a, b) => a + b, 0) / loadedPings.length
+    ? filterOutliers(loadedPings).reduce((a, b) => a + b, 0) / filterOutliers(loadedPings).length
     : 0;
 
   return {
@@ -281,7 +368,7 @@ async function runUploadPhase(baseUrl, signal) {
   );
   const finalMbps = (validBytes * 8) / (effectiveSec * 1_000_000);
   const loadedPingAvg = loadedPings.length
-    ? loadedPings.reduce((a, b) => a + b, 0) / loadedPings.length
+    ? filterOutliers(loadedPings).reduce((a, b) => a + b, 0) / filterOutliers(loadedPings).length
     : 0;
 
   return { mbps: finalMbps, loadedPing: loadedPingAvg, samples: speedSamples };
@@ -300,4 +387,6 @@ async function runFullSuite(baseUrl, signal) {
       upload: uploadResult
     }
   });
+
+  await measurePlatforms(signal);
 }
