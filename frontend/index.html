@@ -6,7 +6,7 @@
   <title>Speedtest Engine • Zero-Log Telemetry</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
@@ -21,7 +21,7 @@
     <header class="top-bar glass-panel">
       <div class="brand-cluster">
         <div class="brand-logo" aria-hidden="true">
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 13l4-4" />
             <path d="M3.34 19a10 10 0 1 1 17.32 0" />
           </svg>
@@ -37,22 +37,22 @@
           <span class="pulse-dot"></span>
           <span class="net-isp" id="isp-name" data-i18n="detectingNet">Detecting Network...</span>
           <span class="net-sep">•</span>
-          <span class="net-ip mono" id="ip-info">--.--.xxx.xxx</span>
+          <span class="net-ip num" id="ip-info">--.--.xxx.xxx</span>
         </div>
 
         <div class="action-pills">
           <button type="button" class="ctrl-btn" id="history-open-btn">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
             <span data-i18n="historyBtn">HISTORY</span>
-            <span class="count-chip" id="history-count">0</span>
+            <span class="count-chip num" id="history-count">0</span>
           </button>
 
-          <button type="button" class="ctrl-btn" id="lang-toggle" title="Language">
+          <button type="button" class="ctrl-btn" id="lang-toggle">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
             <span id="lang-label">TR</span>
           </button>
 
-          <button type="button" class="ctrl-btn" id="theme-toggle" title="Theme">
+          <button type="button" class="ctrl-btn" id="theme-toggle">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
             <span id="theme-label">DARK</span>
           </button>
@@ -76,13 +76,13 @@
         <div class="gauge-stage">
           <canvas id="speed-gauge"></canvas>
           <div class="gauge-readout">
-            <div class="speed-number mono" id="live-speed">0.00</div>
-            <button type="button" class="unit-toggle-btn mono" id="unit-toggle-btn" title="Mbps / MB/s">
+            <div class="speed-number num" id="live-speed">0.00</div>
+            <button type="button" class="unit-toggle-btn" id="unit-toggle-btn" title="Mbps / MB/s">
               <span id="live-unit">Mbps</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 10l5-5 5 5"/><path d="M17 14l-5 5-5-5"/></svg>
             </button>
-            <div class="phase-badge" id="test-phase">READY</div>
           </div>
+          <div class="phase-badge" id="test-phase">READY</div>
         </div>
 
         <div class="cta-row">
@@ -102,7 +102,7 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               <span data-i18n="stabilityLabel">Throughput Stability</span>
             </span>
-            <span class="wave-val mono" id="stability-score">--%</span>
+            <span class="wave-val num" id="stability-score">--%</span>
           </div>
           <canvas id="wave-chart"></canvas>
         </div>
@@ -120,10 +120,10 @@
               </span>
             </div>
             <div class="metric-value-row">
-              <span class="metric-val mono" id="res-download">—</span>
+              <span class="metric-val num" id="res-download">—</span>
               <span class="metric-unit" id="res-download-unit">Mbps</span>
             </div>
-            <div class="metric-sub mono" id="res-download-mb">0.00 MB/s</div>
+            <div class="metric-sub num" id="res-download-mb">0.00 MB/s</div>
           </article>
 
           <article class="metric-card glass-panel" id="card-upload">
@@ -134,10 +134,10 @@
               </span>
             </div>
             <div class="metric-value-row">
-              <span class="metric-val mono" id="res-upload">—</span>
+              <span class="metric-val num" id="res-upload">—</span>
               <span class="metric-unit" id="res-upload-unit">Mbps</span>
             </div>
-            <div class="metric-sub mono" id="res-upload-mb">0.00 MB/s</div>
+            <div class="metric-sub num" id="res-upload-mb">0.00 MB/s</div>
           </article>
 
           <article class="metric-card glass-panel" id="card-ping">
@@ -148,10 +148,10 @@
               </span>
             </div>
             <div class="metric-value-row">
-              <span class="metric-val mono" id="res-ping">—</span>
+              <span class="metric-val num" id="res-ping">—</span>
               <span class="metric-unit">ms</span>
             </div>
-            <div class="metric-sub mono" id="res-min-max-ping">Min -- / Max -- ms</div>
+            <div class="metric-sub num" id="res-min-max-ping">Min -- / Max -- ms</div>
           </article>
 
           <article class="metric-card glass-panel" id="card-jitter">
@@ -162,40 +162,40 @@
               </span>
             </div>
             <div class="metric-value-row">
-              <span class="metric-val mono" id="res-jitter">—</span>
+              <span class="metric-val num" id="res-jitter">—</span>
               <span class="metric-unit">ms</span>
             </div>
-            <div class="metric-sub mono" id="res-loss">Packet Loss: 0.0%</div>
+            <div class="metric-sub num" id="res-loss">Packet Loss: 0.0%</div>
           </article>
         </div>
 
-        <!-- Orta Hat Kalite Endeksi & Senaryo Rozetleri -->
+        <!-- Orta Hat Kalite Endeksi & Senaryo Rozetleri (Üst Üste Binme Sıfır) -->
         <article class="quality-card glass-panel">
           <div class="quality-top">
             <div class="quality-info">
               <span class="icon-chip chip-emerald">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               </span>
-              <div>
+              <div class="quality-texts">
                 <h2 data-i18n="qualityTitle">Line Quality Index</h2>
                 <p id="quality-verdict" data-i18n="qualityReadyDesc">Run a test to evaluate overall connection health</p>
               </div>
             </div>
 
-            <div class="quality-right">
-              <div class="scenario-chips" id="scenario-chips">
-                <span class="sc-chip" id="sc-stream" data-i18n="scStream">4K Stream</span>
-                <span class="sc-chip" id="sc-game" data-i18n="scGame">Gaming</span>
-                <span class="sc-chip" id="sc-call" data-i18n="scCall">Video Call</span>
-              </div>
-              <div class="score-pill mono">
-                <span id="quality-score">--</span><small>/100</small>
-              </div>
+            <div class="score-pill num">
+              <span id="quality-score">--</span><small>/100</small>
             </div>
           </div>
 
-          <div class="quality-bar-track">
-            <div class="quality-bar-fill" id="quality-fill"></div>
+          <div class="quality-bottom-meta">
+            <div class="scenario-chips" id="scenario-chips">
+              <span class="sc-chip" id="sc-stream" data-i18n="scStream">4K Stream</span>
+              <span class="sc-chip" id="sc-game" data-i18n="scGame">Online Gaming</span>
+              <span class="sc-chip" id="sc-call" data-i18n="scCall">Video Call</span>
+            </div>
+            <div class="quality-bar-track">
+              <div class="quality-bar-fill" id="quality-fill"></div>
+            </div>
           </div>
         </article>
 
@@ -213,21 +213,21 @@
                   <p data-i18n="bufferbloatDesc">Latency inflation under load</p>
                 </div>
               </div>
-              <span class="grade-badge" id="bufferbloat-grade">-</span>
+              <span class="grade-badge num" id="bufferbloat-grade">-</span>
             </div>
 
             <div class="stat-rows">
               <div class="stat-row">
-                <span data-i18n="unloadedLabel">Unloaded (Idle)</span>
-                <strong class="mono" id="bloat-idle">-- ms</strong>
+                <span data-i18n="unloadedLabel">Idle Latency</span>
+                <strong class="num" id="bloat-idle">-- ms</strong>
               </div>
               <div class="stat-row">
-                <span data-i18n="dlActiveLabel">Download Active</span>
-                <strong class="mono" id="bloat-dl">-- ms</strong>
+                <span data-i18n="dlActiveLabel">Download Load</span>
+                <strong class="num" id="bloat-dl">-- ms</strong>
               </div>
               <div class="stat-row">
-                <span data-i18n="ulActiveLabel">Upload Active</span>
-                <strong class="mono" id="bloat-ul">-- ms</strong>
+                <span data-i18n="ulActiveLabel">Upload Load</span>
+                <strong class="num" id="bloat-ul">-- ms</strong>
               </div>
             </div>
           </article>
@@ -250,15 +250,15 @@
             <div class="stat-rows">
               <div class="stat-row">
                 <span data-i18n="ttfbLabel">First Byte (TTFB)</span>
-                <strong class="mono" id="diag-ttfb">-- ms</strong>
+                <strong class="num" id="diag-ttfb">-- ms</strong>
               </div>
               <div class="stat-row">
-                <span data-i18n="serverNodeLabel">Test Node</span>
-                <strong class="mono" id="diag-node">Frankfurt • EU</strong>
+                <span data-i18n="serverNodeLabel">Test Server</span>
+                <strong class="num" id="diag-node">Frankfurt • EU</strong>
               </div>
               <div class="stat-row">
                 <span data-i18n="asnLabel">Network ASN</span>
-                <strong class="mono" id="diag-asn">AS----</strong>
+                <strong class="num" id="diag-asn">AS----</strong>
               </div>
             </div>
           </article>
