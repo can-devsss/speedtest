@@ -27,8 +27,8 @@ class SpeedVisuals {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     const gRect = this.gaugeCanvas.getBoundingClientRect();
-    const gw = gRect.width || 240;
-    const gh = gRect.height || 225;
+    const gw = gRect.width || 246;
+    const gh = gRect.height || 228;
     this.gaugeCanvas.width = gw * dpr;
     this.gaugeCanvas.height = gh * dpr;
     this.gCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -62,6 +62,17 @@ class SpeedVisuals {
 
     this.wavePoints.push(this.targetSpeed);
     if (this.wavePoints.length > 42) this.wavePoints.shift();
+  }
+
+  setFinalSamples(samples) {
+    if (!samples || !samples.length) return;
+    this.mode = "DOWNLOAD";
+    const padded = samples.slice(-42);
+    while (padded.length < 12) {
+      padded.unshift(padded[0] || 0);
+    }
+    this.wavePoints = padded;
+    this.renderOnce();
   }
 
   reset() {
@@ -98,21 +109,21 @@ class SpeedVisuals {
     // Arka Plan Rayı
     ctx.beginPath();
     ctx.arc(cx, cy, radius, startAngle, endAngle);
-    ctx.lineWidth = 13;
+    ctx.lineWidth = 14;
     ctx.lineCap = "round";
-    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.07)";
+    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.09)" : "rgba(28,25,23,0.08)";
     ctx.stroke();
 
-    // Ölçek İşaretleri (Ticks)
+    // Ölçek İşaretleri
     const ticks = [0, 0.2, 0.4, 0.6, 0.8, 1];
-    ctx.font = "600 9.5px 'JetBrains Mono', monospace";
+    ctx.font = "700 10px 'JetBrains Mono', monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = isDark ? "rgba(255,255,255,0.35)" : "rgba(15,23,42,0.36)";
+    ctx.fillStyle = isDark ? "rgba(255,255,255,0.42)" : "rgba(28,25,23,0.42)";
 
     ticks.forEach((t) => {
       const ang = startAngle + totalArc * t;
-      const labelRadius = radius + 21;
+      const labelRadius = radius + 22;
       const lx = cx + Math.cos(ang) * labelRadius;
       const ly = cy + Math.sin(ang) * labelRadius;
       const val = Math.round(this.maxScale * t);
@@ -128,11 +139,11 @@ class SpeedVisuals {
       ctx.save();
       ctx.beginPath();
       ctx.arc(cx, cy, radius, startAngle, activeEnd);
-      ctx.lineWidth = 13;
+      ctx.lineWidth = 14;
       ctx.lineCap = "round";
       ctx.strokeStyle = accent;
       ctx.shadowColor = accent;
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 16;
       ctx.stroke();
       ctx.restore();
     }
@@ -146,29 +157,29 @@ class SpeedVisuals {
 
     const maxVal = Math.max(...this.wavePoints, 10);
     const accent = this.getActiveColor();
-    const stepX = w / (this.wavePoints.length - 1);
+    const count = this.wavePoints.length;
+    const stepX = count > 1 ? w / (count - 1) : w;
 
     ctx.beginPath();
     this.wavePoints.forEach((val, idx) => {
       const x = idx * stepX;
       const norm = val / (maxVal * 1.15);
-      const y = h - 5 - norm * (h - 12);
+      const y = h - 6 - norm * (h - 14);
       if (idx === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
 
-    ctx.lineWidth = 2.2;
+    ctx.lineWidth = 2.4;
     ctx.lineJoin = "round";
     ctx.strokeStyle = accent;
     ctx.stroke();
 
-    // Yumuşak Alan Dolgusu
     ctx.lineTo(w, h);
     ctx.lineTo(0, h);
     ctx.closePath();
 
     const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, this.mode === "UPLOAD" ? "rgba(245,158,11,0.22)" : "rgba(16,185,129,0.22)");
+    grad.addColorStop(0, this.mode === "UPLOAD" ? "rgba(245,158,11,0.25)" : "rgba(16,185,129,0.25)");
     grad.addColorStop(1, "rgba(16,185,129,0.0)");
     ctx.fillStyle = grad;
     ctx.fill();
@@ -180,7 +191,6 @@ class SpeedVisuals {
   }
 
   animate() {
-    // Yay fiziği (pürüzsüz iğne hareketi)
     const force = (this.targetSpeed - this.currentSpeed) * 0.14;
     this.velocity = (this.velocity + force) * 0.72;
     this.currentSpeed += this.velocity;
