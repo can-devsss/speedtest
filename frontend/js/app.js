@@ -35,18 +35,18 @@ const I18N = {
     qualityGradeGood: "Balanced Line • Smooth Video Calls & Fast Downloads",
     qualityGradeFair: "Moderate Congestion • Noticeable Load Latency",
     scStream: "4K Stream",
-    scGame: "Gaming",
+    scGame: "Online Gaming",
     scCall: "Video Call",
     bufferbloatTitle: "Bufferbloat",
     bufferbloatDesc: "Latency inflation under load",
-    unloadedLabel: "Unloaded (Idle)",
-    dlActiveLabel: "Download Active",
-    ulActiveLabel: "Upload Active",
+    unloadedLabel: "Idle Latency",
+    dlActiveLabel: "Download Load",
+    ulActiveLabel: "Upload Load",
     diagnosticsTitle: "Line Telemetry",
     diagnosticsDesc: "Response & routing metadata",
     telemetryTag: "REAL-TIME",
     ttfbLabel: "First Byte (TTFB)",
-    serverNodeLabel: "Test Node",
+    serverNodeLabel: "Test Server",
     asnLabel: "Network ASN",
     historyTitle: "Test History",
     historySub: "Stored locally on this device",
@@ -99,13 +99,13 @@ const I18N = {
     qualityGradeGood: "Dengeli Hat • Akıcı Görüntülü Görüşme ve Hızlı İndirme",
     qualityGradeFair: "Orta Düzey Yük • Tam Kapasitede Gecikme Artışı Mevcut",
     scStream: "4K Yayın",
-    scGame: "Oyun",
+    scGame: "Çevrimiçi Oyun",
     scCall: "Görüntülü Görüşme",
     bufferbloatTitle: "Bufferbloat",
     bufferbloatDesc: "Tam yük altında gecikme artışı",
     unloadedLabel: "Boşta Gecikme",
-    dlActiveLabel: "Download Yükü Altında",
-    ulActiveLabel: "Upload Yükü Altında",
+    dlActiveLabel: "İndirme Yükünde",
+    ulActiveLabel: "Yükleme Yükünde",
     diagnosticsTitle: "Hat Telemetrisi",
     diagnosticsDesc: "Yanıt süresi ve yönlendirme",
     telemetryTag: "CANLI VERİ",
@@ -279,6 +279,7 @@ function renderSpeedValues() {
       els.resUploadMb.textContent = `${(rawUlMbps / 8).toFixed(2)} MB/s`;
     }
   }
+  renderHistory();
 }
 
 els.unitToggleBtn.addEventListener("click", () => {
@@ -401,23 +402,23 @@ function calculateStability(samples) {
 function evaluateBufferbloat(idlePing, dlPing, ulPing) {
   const maxIncrease = Math.max(dlPing - idlePing, ulPing - idlePing, 0);
   if (maxIncrease < 15) return { grade: "A+", cls: "grade-A", penalty: 0 };
-  if (maxIncrease < 35) return { grade: "A", cls: "grade-A", penalty: 5 };
-  if (maxIncrease < 75) return { grade: "B", cls: "grade-B", penalty: 14 };
-  if (maxIncrease < 140) return { grade: "C", cls: "grade-B", penalty: 25 };
-  return { grade: "F", cls: "grade-F", penalty: 38 };
+  if (maxIncrease < 35) return { grade: "A", cls: "grade-A", penalty: 4 };
+  if (maxIncrease < 75) return { grade: "B", cls: "grade-B", penalty: 10 };
+  if (maxIncrease < 140) return { grade: "C", cls: "grade-B", penalty: 18 };
+  return { grade: "F", cls: "grade-F", penalty: 30 };
 }
 
 function computeQualityScore(dl, ping, jitter, bloatPenalty) {
   let score = 100 - bloatPenalty;
-  if (ping > 85) score -= 16;
-  else if (ping > 45) score -= 7;
-  if (jitter > 15) score -= 12;
-  else if (jitter > 6) score -= 5;
-  if (dl < 25) score -= 12;
-  score = Math.max(25, Math.min(100, Math.round(score)));
+  if (ping > 110) score -= 12;
+  else if (ping > 85) score -= 5;
+  if (jitter > 12) score -= 10;
+  else if (jitter > 5) score -= 4;
+  if (dl < 25) score -= 10;
+  score = Math.max(30, Math.min(100, Math.round(score)));
 
   let verdictKey = "qualityGradeUltra";
-  if (score < 70) verdictKey = "qualityGradeFair";
+  if (score < 72) verdictKey = "qualityGradeFair";
   else if (score < 88) verdictKey = "qualityGradeGood";
 
   return { score, verdictKey };
@@ -427,7 +428,7 @@ function updateScenarioChips(dl, ul, ping, jitter) {
   [els.scStream, els.scGame, els.scCall].forEach((c) => c.classList.remove("sc-ok", "sc-warn"));
 
   els.scStream.classList.add(dl >= 25 ? "sc-ok" : "sc-warn");
-  els.scGame.classList.add(ping <= 85 && jitter <= 12 ? "sc-ok" : "sc-warn");
+  els.scGame.classList.add(ping <= 90 && jitter <= 12 ? "sc-ok" : "sc-warn");
   els.scCall.classList.add(dl >= 10 && ul >= 5 && jitter <= 20 ? "sc-ok" : "sc-warn");
 }
 
@@ -448,17 +449,22 @@ function renderHistory() {
   }
 
   els.historyBody.innerHTML = records
-    .map(
-      (r) => `
+    .map((r) => {
+      const dlNum = parseFloat(r.download);
+      const ulNum = parseFloat(r.upload);
+      const dlFormatted = displayUnit === "MB/s" ? (dlNum / 8).toFixed(2) : dlNum.toFixed(1);
+      const ulFormatted = displayUnit === "MB/s" ? (ulNum / 8).toFixed(2) : ulNum.toFixed(1);
+
+      return `
       <tr>
-        <td class="mono">${r.date}</td>
-        <td class="mono"><strong>${r.download}</strong> Mbps</td>
-        <td class="mono"><strong>${r.upload}</strong> Mbps</td>
-        <td class="mono">${r.ping} ms</td>
-        <td><span class="grade-badge ${r.bloatCls}">${r.bloatGrade}</span></td>
+        <td class="num">${r.date}</td>
+        <td class="num"><strong>${dlFormatted}</strong> ${displayUnit}</td>
+        <td class="num"><strong>${ulFormatted}</strong> ${displayUnit}</td>
+        <td class="num">${r.ping} ms</td>
+        <td><span class="grade-badge num ${r.bloatCls}">${r.bloatGrade}</span></td>
       </tr>
-    `
-    )
+    `;
+    })
     .join("");
 }
 
@@ -479,7 +485,7 @@ function startTest() {
   els.btnIcon.textContent = "■";
   els.btnText.textContent = t("stopBtn");
 
-  els.bloatGrade.className = "grade-badge";
+  els.bloatGrade.className = "grade-badge num";
   els.bloatGrade.textContent = "-";
   els.qualityScore.textContent = "--";
   els.qualityFill.style.width = "0%";
@@ -557,7 +563,7 @@ function finalizeResults(res) {
 
   const bloat = evaluateBufferbloat(ping, dlLoaded, ulLoaded);
   els.bloatGrade.textContent = bloat.grade;
-  els.bloatGrade.className = `grade-badge ${bloat.cls}`;
+  els.bloatGrade.className = `grade-badge num ${bloat.cls}`;
 
   const quality = computeQualityScore(dl, ping, jitter, bloat.penalty);
   els.qualityScore.textContent = String(quality.score);
