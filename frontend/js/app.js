@@ -1,5 +1,6 @@
 const visuals = new SpeedVisuals("speed-gauge", "wave-chart");
 let worker = null;
+let platformWorker = null;
 let isRunning = false;
 let networkMetadata = null;
 let lastReportData = null;
@@ -27,7 +28,7 @@ const I18N = {
     stabilityLabel: "Throughput Stability",
     downloadLabel: "DOWNLOAD",
     uploadLabel: "UPLOAD",
-    pingLabel: "IDLE PING",
+    pingLabel: "LOCAL PING",
     jitterLabel: "JITTER",
     qualityTitle: "Line Quality Index",
     qualityReadyDesc: "Run a test to evaluate overall connection health",
@@ -39,15 +40,18 @@ const I18N = {
     scCall: "Video Call",
     bufferbloatTitle: "Bufferbloat",
     bufferbloatDesc: "Latency inflation under load",
-    unloadedLabel: "Idle Latency",
+    unloadedLabel: "EU Server Idle",
     dlActiveLabel: "Download Load",
     ulActiveLabel: "Upload Load",
     diagnosticsTitle: "Line Telemetry",
     diagnosticsDesc: "Response & routing metadata",
     telemetryTag: "REAL-TIME",
+    euPingLabel: "Frankfurt Node",
     ttfbLabel: "First Byte (TTFB)",
-    serverNodeLabel: "Test Server",
     asnLabel: "Network ASN",
+    platformTitle: "Platform & Gaming Latency",
+    platformDesc: "Live CDN & server reachability from your device",
+    pingAppsBtn: "Ping Apps",
     historyTitle: "Test History",
     historySub: "Stored locally on this device",
     clearBtn: "Clear",
@@ -65,7 +69,7 @@ const I18N = {
     copyBtn: "Copy",
     copiedBtn: "Copied",
     phaseReady: "READY",
-    phasePing: "PING & JITTER",
+    phasePing: "LOCAL PING & JITTER",
     phaseDownload: "DOWNLOAD (4X)",
     phaseUpload: "UPLOAD (4X)",
     phaseCompleted: "COMPLETED",
@@ -73,7 +77,8 @@ const I18N = {
     phaseRateLimit: "RATE LIMIT • WAIT 60S",
     packetLossInline: "Packet Loss",
     minMaxPrefix: "Min",
-    maxLabel: "Max"
+    maxLabel: "Max",
+    timeoutText: "Timeout"
   },
   tr: {
     zeroLogBadge: "SIFIR KAYIT",
@@ -91,7 +96,7 @@ const I18N = {
     stabilityLabel: "Akış Kararlılığı",
     downloadLabel: "İNDİRME",
     uploadLabel: "YÜKLEME",
-    pingLabel: "BOŞTA PING",
+    pingLabel: "YEREL PING",
     jitterLabel: "JITTER",
     qualityTitle: "Hat Kalite Endeksi",
     qualityReadyDesc: "Genel bağlantı sağlığını ölçmek için testi başlatın",
@@ -103,15 +108,18 @@ const I18N = {
     scCall: "Görüntülü Görüşme",
     bufferbloatTitle: "Bufferbloat",
     bufferbloatDesc: "Tam yük altında gecikme artışı",
-    unloadedLabel: "Boşta Gecikme",
+    unloadedLabel: "Avrupa Boşta",
     dlActiveLabel: "İndirme Yükünde",
     ulActiveLabel: "Yükleme Yükünde",
     diagnosticsTitle: "Hat Telemetrisi",
     diagnosticsDesc: "Yanıt süresi ve yönlendirme",
     telemetryTag: "CANLI VERİ",
+    euPingLabel: "Frankfurt Sunucu",
     ttfbLabel: "İlk Bayt Süresi (TTFB)",
-    serverNodeLabel: "Test Sunucusu",
     asnLabel: "Ağ ASN Numarası",
+    platformTitle: "Platform & Oyun Gecikmeleri",
+    platformDesc: "Cihazınızdan uygulamalara anlık erişim süresi",
+    pingAppsBtn: "Uygulamaları Ölç",
     historyTitle: "Ölçüm Geçmişi",
     historySub: "Yalnızca bu cihazda saklanır",
     clearBtn: "Temizle",
@@ -129,7 +137,7 @@ const I18N = {
     copyBtn: "Kopyala",
     copiedBtn: "Kopyalandı",
     phaseReady: "HAZIR",
-    phasePing: "PING & JITTER",
+    phasePing: "YEREL PING & JITTER",
     phaseDownload: "İNDİRME (4X)",
     phaseUpload: "YÜKLEME (4X)",
     phaseCompleted: "TAMAMLANDI",
@@ -137,7 +145,8 @@ const I18N = {
     phaseRateLimit: "HIZ SINIRI • 60 SN BEKLEYİN",
     packetLossInline: "Paket Kaybı",
     minMaxPrefix: "Min",
-    maxLabel: "Maks"
+    maxLabel: "Maks",
+    timeoutText: "Zaman Aşımı"
   }
 };
 
@@ -187,8 +196,12 @@ const els = {
   bloatIdle: document.getElementById("bloat-idle"),
   bloatDl: document.getElementById("bloat-dl"),
   bloatUl: document.getElementById("bloat-ul"),
+  diagEuPing: document.getElementById("diag-eu-ping"),
   diagTtfb: document.getElementById("diag-ttfb"),
   diagAsn: document.getElementById("diag-asn"),
+  platformAccordion: document.getElementById("platform-accordion"),
+  platformHeader: document.getElementById("platform-toggle-header"),
+  pingAppsBtn: document.getElementById("ping-apps-btn"),
   historyBody: document.getElementById("history-body"),
   clearHistoryBtn: document.getElementById("clear-history-btn")
 };
@@ -201,6 +214,57 @@ function updateThemeButtonLabel() {
   const isDark = document.body.classList.contains("dark-theme");
   els.themeLabel.textContent = isDark ? t("themeLight") : t("themeDark");
 }
+
+// Açılır / Kapanır Platform Sekmesi
+els.platformHeader.addEventListener("click", (e) => {
+  if (e.target.closest("#ping-apps-btn")) return;
+  const collapsed = els.platformAccordion.classList.toggle("collapsed");
+  els.platformHeader.setAttribute("aria-expanded", String(!collapsed));
+});
+
+function updatePlatformBadge(id, ms) {
+  const el = document.getElementById(`plat-ms-${id}`);
+  if (!el) return;
+  el.classList.remove("ms-fast", "ms-mid", "ms-slow");
+
+  if (ms < 0) {
+    el.textContent = t("timeoutText");
+    el.classList.add("ms-slow");
+    return;
+  }
+
+  el.textContent = `${ms} ms`;
+  if (ms <= 75) el.classList.add("ms-fast");
+  else if (ms <= 145) el.classList.add("ms-mid");
+  else el.classList.add("ms-slow");
+}
+
+function runPlatformPingOnly() {
+  els.platformAccordion.classList.remove("collapsed");
+  els.platformHeader.setAttribute("aria-expanded", "true");
+  els.pingAppsBtn.classList.add("spinning");
+
+  if (platformWorker) platformWorker.terminate();
+  platformWorker = new Worker("/js/worker.js");
+
+  platformWorker.onmessage = (e) => {
+    const msg = e.data;
+    if (msg.type === "PLATFORM_TICK") {
+      updatePlatformBadge(msg.id, msg.ms);
+    } else if (msg.type === "PLATFORMS_DONE") {
+      els.pingAppsBtn.classList.remove("spinning");
+      platformWorker.terminate();
+      platformWorker = null;
+    }
+  };
+
+  platformWorker.postMessage({ command: "PING_PLATFORMS" });
+}
+
+els.pingAppsBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  runPlatformPingOnly();
+});
 
 function updatePhaseVisuals(phaseKey) {
   els.cardDownload.classList.remove("card-active-emerald");
@@ -408,12 +472,12 @@ function evaluateBufferbloat(idlePing, dlPing, ulPing) {
   return { grade: "F", cls: "grade-F", penalty: 30 };
 }
 
-function computeQualityScore(dl, ping, jitter, bloatPenalty) {
+function computeQualityScore(dl, localPing, jitter, bloatPenalty) {
   let score = 100 - bloatPenalty;
-  if (ping > 110) score -= 12;
-  else if (ping > 85) score -= 5;
+  if (localPing > 65) score -= 14;
+  else if (localPing > 35) score -= 6;
   if (jitter > 12) score -= 10;
-  else if (jitter > 5) score -= 4;
+  else if (jitter > 4) score -= 4;
   if (dl < 25) score -= 10;
   score = Math.max(30, Math.min(100, Math.round(score)));
 
@@ -424,12 +488,12 @@ function computeQualityScore(dl, ping, jitter, bloatPenalty) {
   return { score, verdictKey };
 }
 
-function updateScenarioChips(dl, ul, ping, jitter) {
+function updateScenarioChips(dl, ul, localPing, jitter) {
   [els.scStream, els.scGame, els.scCall].forEach((c) => c.classList.remove("sc-ok", "sc-warn"));
 
   els.scStream.classList.add(dl >= 25 ? "sc-ok" : "sc-warn");
-  els.scGame.classList.add(ping <= 90 && jitter <= 12 ? "sc-ok" : "sc-warn");
-  els.scCall.classList.add(dl >= 10 && ul >= 5 && jitter <= 20 ? "sc-ok" : "sc-warn");
+  els.scGame.classList.add(localPing <= 55 && jitter <= 10 ? "sc-ok" : "sc-warn");
+  els.scCall.classList.add(dl >= 10 && ul >= 5 && jitter <= 18 ? "sc-ok" : "sc-warn");
 }
 
 function saveToLocalHistory(entry) {
@@ -514,6 +578,12 @@ function startTest() {
       visuals.setTarget(msg.mbps, msg.mode);
     } else if (msg.type === "COMPLETE") {
       finalizeResults(msg.results);
+      els.pingAppsBtn.classList.add("spinning");
+    } else if (msg.type === "PLATFORM_TICK") {
+      updatePlatformBadge(msg.id, msg.ms);
+    } else if (msg.type === "PLATFORMS_DONE") {
+      els.pingAppsBtn.classList.remove("spinning");
+      resetUIState(true);
     } else if (msg.type === "ERROR") {
       visuals.reset();
       rawLiveMbps = 0;
@@ -532,10 +602,11 @@ function startTest() {
 function finalizeResults(res) {
   const dl = res.download.mbps;
   const ul = res.upload.mbps;
-  const ping = res.ping.avg;
+  const localPing = res.ping.avg;
+  const euPing = res.ping.euAvg || localPing;
   const jitter = res.ping.jitter;
   const loss = res.ping.packetLoss;
-  const ttfb = res.download.ttfb || ping;
+  const ttfb = res.download.ttfb || euPing;
 
   rawLiveMbps = dl;
   rawDlMbps = dl;
@@ -546,32 +617,33 @@ function finalizeResults(res) {
   visuals.setFinalSamples(res.download.samples);
   setPhase("completed");
 
-  els.resPing.textContent = ping.toFixed(1);
+  els.resPing.textContent = localPing.toFixed(1);
   els.resJitter.textContent = jitter.toFixed(1);
 
   const lossFormatted = `${loss.toFixed(1)}%`;
   els.resLoss.dataset.lossVal = lossFormatted;
   els.resLoss.textContent = `${t("packetLossInline")}: ${lossFormatted}`;
 
+  els.diagEuPing.textContent = `${euPing.toFixed(1)} ms`;
   els.diagTtfb.textContent = `${ttfb.toFixed(1)} ms`;
 
-  const dlLoaded = res.download.loadedPing || ping;
-  const ulLoaded = res.upload.loadedPing || ping;
-  els.bloatIdle.textContent = `${ping.toFixed(1)} ms`;
-  els.bloatDl.textContent = `${dlLoaded.toFixed(1)} ms (+${Math.max(0, dlLoaded - ping).toFixed(0)})`;
-  els.bloatUl.textContent = `${ulLoaded.toFixed(1)} ms (+${Math.max(0, ulLoaded - ping).toFixed(0)})`;
+  const dlLoaded = res.download.loadedPing || euPing;
+  const ulLoaded = res.upload.loadedPing || euPing;
+  els.bloatIdle.textContent = `${euPing.toFixed(1)} ms`;
+  els.bloatDl.textContent = `${dlLoaded.toFixed(1)} ms (+${Math.max(0, dlLoaded - euPing).toFixed(0)})`;
+  els.bloatUl.textContent = `${ulLoaded.toFixed(1)} ms (+${Math.max(0, ulLoaded - euPing).toFixed(0)})`;
 
-  const bloat = evaluateBufferbloat(ping, dlLoaded, ulLoaded);
+  const bloat = evaluateBufferbloat(euPing, dlLoaded, ulLoaded);
   els.bloatGrade.textContent = bloat.grade;
   els.bloatGrade.className = `grade-badge num ${bloat.cls}`;
 
-  const quality = computeQualityScore(dl, ping, jitter, bloat.penalty);
+  const quality = computeQualityScore(dl, localPing, jitter, bloat.penalty);
   els.qualityScore.textContent = String(quality.score);
   els.qualityFill.style.width = `${quality.score}%`;
   els.qualityVerdict.dataset.verdictKey = quality.verdictKey;
   els.qualityVerdict.textContent = t(quality.verdictKey);
 
-  updateScenarioChips(dl, ul, ping, jitter);
+  updateScenarioChips(dl, ul, localPing, jitter);
 
   const stability = calculateStability(res.download.samples);
   els.stabilityScore.textContent = `${stability}%`;
@@ -579,7 +651,7 @@ function finalizeResults(res) {
   lastReportData = {
     dl: dl.toFixed(1),
     ul: ul.toFixed(1),
-    ping: ping.toFixed(1),
+    ping: localPing.toFixed(1),
     jitter: jitter.toFixed(1),
     grade: bloat.grade,
     score: quality.score
@@ -595,17 +667,21 @@ function finalizeResults(res) {
     }),
     download: dl.toFixed(1),
     upload: ul.toFixed(1),
-    ping: ping.toFixed(0),
+    ping: localPing.toFixed(0),
     jitter: jitter.toFixed(1),
     bloatGrade: bloat.grade,
     bloatCls: bloat.cls
   });
 
-  resetUIState(true);
+  isRunning = false;
+  els.startBtn.classList.remove("btn-running");
+  els.btnIcon.textContent = "▶";
+  els.btnText.textContent = t("againBtn");
 }
 
 function resetUIState(completed = false) {
   isRunning = false;
+  els.pingAppsBtn.classList.remove("spinning");
   els.startBtn.classList.remove("btn-running");
   els.btnIcon.textContent = "▶";
   els.btnText.textContent = completed ? t("againBtn") : t("startBtn");
@@ -620,8 +696,8 @@ els.copyReportBtn.addEventListener("click", async () => {
   const r = lastReportData;
   const summary =
     currentLang === "tr"
-      ? `Speedtest Engine | İndirme: ${r.dl} Mbps | Yükleme: ${r.ul} Mbps | Ping: ${r.ping} ms | Jitter: ${r.jitter} ms | Bufferbloat: ${r.grade} | Puan: ${r.score}/100`
-      : `Speedtest Engine | Download: ${r.dl} Mbps | Upload: ${r.ul} Mbps | Ping: ${r.ping} ms | Jitter: ${r.jitter} ms | Bufferbloat: ${r.grade} | Score: ${r.score}/100`;
+      ? `Speedtest Engine | İndirme: ${r.dl} Mbps | Yükleme: ${r.ul} Mbps | Yerel Ping: ${r.ping} ms | Jitter: ${r.jitter} ms | Bufferbloat: ${r.grade} | Puan: ${r.score}/100`
+      : `Speedtest Engine | Download: ${r.dl} Mbps | Upload: ${r.ul} Mbps | Local Ping: ${r.ping} ms | Jitter: ${r.jitter} ms | Bufferbloat: ${r.grade} | Score: ${r.score}/100`;
   await navigator.clipboard.writeText(summary);
   els.copyText.textContent = t("copiedBtn");
   setTimeout(() => {
