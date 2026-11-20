@@ -2,7 +2,7 @@ const CONFIG = {
   pingCount: 16,
   downloadStreams: 4,
   uploadStreams: 4,
-  phaseDurationMs: 6000, // Kota dostu 6 saniye faz suresi
+  phaseDurationMs: 6000,
   warmupMs: 1000,
   chunkSizeMb: 15
 };
@@ -55,10 +55,33 @@ function calculateStats(samples) {
   return { avg, min, max, jitter };
 }
 
+// Çakışmasız sıralı Bufferbloat ping döngüsü
+function startBloatMonitor(baseUrl, signal, targetArray) {
+  let active = true;
+  const loop = async () => {
+    while (active && !signal.aborted) {
+      try {
+        const rtt = await measureSinglePing(baseUrl, signal);
+        targetArray.push(rtt);
+      } catch (_) {}
+      await new Promise((r) => setTimeout(r, 420));
+    }
+  };
+  loop();
+  return () => {
+    active = false;
+  };
+}
+
 async function runPingPhase(baseUrl, signal) {
   self.postMessage({ type: "PHASE", phase: "PING" });
   const pings = [];
   let failed = 0;
+
+  // İlk istek DNS/TLS el sıkışması olduğu için ısınma olarak atılır
+  try {
+    await measureSinglePing(baseUrl, signal);
+  } catch (_) {}
 
   for (let i = 0; i < CONFIG.pingCount; i++) {
     try {
@@ -73,7 +96,7 @@ async function runPingPhase(baseUrl, signal) {
       if (err.name === "AbortError") throw err;
       failed++;
     }
-    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((r) => setTimeout(r, 45));
   }
 
   const stats = calculateStats(pings);
@@ -92,12 +115,7 @@ async function runDownloadPhase(baseUrl, signal) {
   const loadedPings = [];
   const speedSamples = [];
 
-  const bloatInterval = setInterval(async () => {
-    try {
-      const rtt = await measureSinglePing(baseUrl, signal);
-      loadedPings.push(rtt);
-    } catch (_) {}
-  }, 400);
+  const stopBloat = startBloatMonitor(baseUrl, signal, loadedPings);
 
   let lastTickBytes = 0;
   let lastTickTime = startTime;
@@ -106,7 +124,7 @@ async function runDownloadPhase(baseUrl, signal) {
     const dt = (now - lastTickTime) / 1000;
     if (dt > 0) {
       const instantMbps = ((totalBytes - lastTickBytes) * 8) / (dt * 1_000_000);
-      if (now - startTime > CONFIG.warmupMs) {
+      if (now - startTime > CONFIG.warmupMs && instantMbps > 0) {
         speedSamples.push(instantMbps);
       }
       self.postMessage({
@@ -117,7 +135,7 @@ async function runDownloadPhase(baseUrl, signal) {
       lastTickBytes = totalBytes;
       lastTickTime = now;
     }
-  }, 200);
+  }, 180);
 
   const workerStream = async () => {
     while (performance.now() - startTime < CONFIG.phaseDurationMs) {
@@ -162,7 +180,7 @@ async function runDownloadPhase(baseUrl, signal) {
       Array.from({ length: CONFIG.downloadStreams }, () => workerStream())
     );
   } finally {
-    clearInterval(bloatInterval);
+    stopBloat();
     clearInterval(reportInterval);
   }
 
@@ -204,12 +222,7 @@ async function runUploadPhase(baseUrl, signal) {
   const loadedPings = [];
   const speedSamples = [];
 
-  const bloatInterval = setInterval(async () => {
-    try {
-      const rtt = await measureSinglePing(baseUrl, signal);
-      loadedPings.push(rtt);
-    } catch (_) {}
-  }, 400);
+  const stopBloat = startBloatMonitor(baseUrl, signal, loadedPings);
 
   let lastTickBytes = 0;
   let lastTickTime = startTime;
@@ -229,7 +242,7 @@ async function runUploadPhase(baseUrl, signal) {
       lastTickBytes = totalBytes;
       lastTickTime = now;
     }
-  }, 250);
+  }, 220);
 
   const uploadStream = async () => {
     while (performance.now() - startTime < CONFIG.phaseDurationMs) {
@@ -258,7 +271,7 @@ async function runUploadPhase(baseUrl, signal) {
       Array.from({ length: CONFIG.uploadStreams }, () => uploadStream())
     );
   } finally {
-    clearInterval(bloatInterval);
+    stopBloat();
     clearInterval(reportInterval);
   }
 
