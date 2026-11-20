@@ -36,7 +36,7 @@ const I18N = {
     qualityGradeGood: "Balanced Line • Smooth Video Calls & Fast Downloads",
     qualityGradeFair: "Moderate Congestion • Noticeable Load Latency",
     scStream: "4K Stream",
-    scGame: "Online Gaming",
+    scGame: "Gaming",
     scCall: "Video Call",
     bufferbloatTitle: "Bufferbloat",
     bufferbloatDesc: "Latency inflation under load",
@@ -49,9 +49,9 @@ const I18N = {
     euPingLabel: "Frankfurt Node",
     ttfbLabel: "First Byte (TTFB)",
     asnLabel: "Network ASN",
-    platformTitle: "Platform & Gaming Latency",
-    platformDesc: "Live CDN & server reachability from your device",
-    pingAppsBtn: "Ping Apps",
+    platformTitle: "Apps & Games Ping",
+    platformDesc: "Personal latency from your own connection",
+    pingAppsBtn: "Measure",
     historyTitle: "Test History",
     historySub: "Stored locally on this device",
     clearBtn: "Clear",
@@ -78,7 +78,7 @@ const I18N = {
     packetLossInline: "Packet Loss",
     minMaxPrefix: "Min",
     maxLabel: "Max",
-    timeoutText: "Timeout"
+    timeoutText: "Blocked"
   },
   tr: {
     zeroLogBadge: "SIFIR KAYIT",
@@ -104,8 +104,8 @@ const I18N = {
     qualityGradeGood: "Dengeli Hat • Akıcı Görüntülü Görüşme ve Hızlı İndirme",
     qualityGradeFair: "Orta Düzey Yük • Tam Kapasitede Gecikme Artışı Mevcut",
     scStream: "4K Yayın",
-    scGame: "Çevrimiçi Oyun",
-    scCall: "Görüntülü Görüşme",
+    scGame: "Oyun",
+    scCall: "Görüşme",
     bufferbloatTitle: "Bufferbloat",
     bufferbloatDesc: "Tam yük altında gecikme artışı",
     unloadedLabel: "Avrupa Boşta",
@@ -117,9 +117,9 @@ const I18N = {
     euPingLabel: "Frankfurt Sunucu",
     ttfbLabel: "İlk Bayt Süresi (TTFB)",
     asnLabel: "Ağ ASN Numarası",
-    platformTitle: "Platform & Oyun Gecikmeleri",
-    platformDesc: "Cihazınızdan uygulamalara anlık erişim süresi",
-    pingAppsBtn: "Uygulamaları Ölç",
+    platformTitle: "Uygulama & Oyun Ping",
+    platformDesc: "Kendi bağlantınızdan kişisel gecikme süreleri",
+    pingAppsBtn: "Ölç",
     historyTitle: "Ölçüm Geçmişi",
     historySub: "Yalnızca bu cihazda saklanır",
     clearBtn: "Temizle",
@@ -146,7 +146,7 @@ const I18N = {
     packetLossInline: "Paket Kaybı",
     minMaxPrefix: "Min",
     maxLabel: "Maks",
-    timeoutText: "Zaman Aşımı"
+    timeoutText: "Erişim Yok"
   }
 };
 
